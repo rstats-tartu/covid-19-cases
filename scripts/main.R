@@ -38,9 +38,12 @@ sheet_1 <- excel_sheets(dataset)[1]
 covid <- read_excel(dataset, sheet = sheet_1)
 covid <- covid %>% 
   rename(Country = `Countries and territories`) %>% 
-  rename_all(str_to_lower)
+  rename_all(tolower) %>% 
+  mutate(date = paste(year, month, day, sep = "-"))
 
 #' 
 #+
 covid
+  
+  
 

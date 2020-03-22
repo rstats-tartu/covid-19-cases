@@ -12,7 +12,7 @@ jobs:
           Rscript -e "remotes::install_deps(dependencies = TRUE, repos = 'https://demo.rstudiopm.com/all/__linux__/bionic/latest')"
       - name: Render README
         run: |-
-          Rscript -e "rmarkdown::render(here::here("scripts/main.R"), output_format = rmarkdown::github_document(), output_file = here::here("README.md"))"
+          Rscript -e "rmarkdown::render(here::here('scripts/main.R'), output_format = rmarkdown::github_document(), output_file = here::here('README.md'))"
       - name: Commit results
         run: |
           git commit README.md -m 'Re-build README.Rmd' || echo "No changes to commit"
