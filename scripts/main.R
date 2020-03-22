@@ -56,7 +56,7 @@ covid <- covid %>%
   mutate(cum_cases = with_order(tp, cumsum, cases),
          cum_deaths = with_order(tp, cumsum, deaths),
          risk = cum_deaths / cum_cases,
-         risk_lag = cum_deaths / lag(cum_cases, n = lag_n)) %>% 
+         risk_lag = cum_deaths / lag(cum_cases, n = lag_n, order_by = tp)) %>% 
   ungroup() %>% 
   filter(cases != 0, deaths !=0)
 
@@ -87,7 +87,8 @@ covid %>%
        y = "Risk of death",
        caption = "Each line represents one country")
 
-
+#' Lagged (7 days) risk.
+#+
 covid %>% 
   filter(!is.na(risk)) %>% 
   ggplot(aes(tp, risk_lag)) +
