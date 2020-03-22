@@ -5,7 +5,8 @@
 #' ---
 #' 
 #' 
-#' Daily covid-19 data is from European Centre for Disease Prevention and Control.
+#' Daily covid-19 data is from [European Centre for Disease Prevention 
+#' and Control](https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide).
 #'
 #+ chunk_opts, include=FALSE
 knitr::opts_chunk$set(message = FALSE)

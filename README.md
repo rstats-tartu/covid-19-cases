@@ -3,8 +3,8 @@ Covid-19 cases
 rstats-tartu
 2020-03-22
 
-Daily covid-19 data is from European Centre for Disease Prevention and
-Control.
+Daily covid-19 data is from [European Centre for Disease Prevention and
+Control](https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide).
 
 Loading libraries
 
