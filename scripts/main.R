@@ -84,7 +84,7 @@ knitr::include_graphics(here("plots/cumulative_number_of_deaths.png"))
 
 #' Fit dose response model to data.
 #+ mod
-f <- bf(cum_cases ~ top / (1 + 10 ^ ((LogEC50 - day))), 
-        top ~ (1 | country), 
-        LogEC50 ~ (1 | country), nl = TRUE)
-mod <- brm(f, data = covid)
+f <- bf(cum_cases ~ plateau * (1 - exp(-k * day)), 
+        plateau ~ 1 + (1 | country), 
+        k ~ 1 + (1 | country), nl = TRUE)
+mod <- brm(f, data = covid, family = gaussian())
