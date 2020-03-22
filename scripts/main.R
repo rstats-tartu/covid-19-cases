@@ -50,9 +50,12 @@ covid <- covid %>%
 
 #' Number of cases and deaths per country.
 #+ cumsums
+lag_n <- 12
 covid <- covid %>% 
   mutate(cum_cases = cumsum(cases),
-         cum_deaths = cumsum(deaths)) %>% 
+         cum_deaths = cumsum(deaths),
+         risk = cum_deaths / cum_cases,
+         risk_lag = cum_deaths / lag(cum_cases, n = lag_n)) %>% 
   ungroup()
 
 #+ plot-cases
@@ -72,9 +75,23 @@ covid %>%
        y = "Cumulative number of deaths",
        caption = "Each line represents one country")
 
-#' Fit dose response model to data.
-#+ mod
-# f <- bf(cum_cases ~ plateau * (1 - exp(-k * day)), 
-#         plateau ~ 1 + (1 | country), 
-#         k ~ 1 + (1 | country), nl = TRUE)
-# mod <- brm(f, data = covid, family = gaussian())
+#' Risk
+#+
+covid %>% 
+  filter(!is.na(risk)) %>% 
+  ggplot(aes(day, risk)) +
+  geom_line(aes(group = country)) +
+  labs(x = "Time, days from first case", 
+       y = "Risk of death",
+       caption = "Each line represents one country")
+
+
+covid %>% 
+  filter(!is.na(risk)) %>% 
+  ggplot(aes(day, risk_lag)) +
+  geom_line(aes(group = country)) +
+  scale_y_log10() +
+  labs(x = "Time, days from first case", 
+       y = "Risk of death",
+       caption = "Each line represents one country")
+
