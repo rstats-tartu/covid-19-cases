@@ -48,27 +48,43 @@ covid <- covid %>%
   group_by(country) %>% 
   mutate(day = interval(daterep, yesterday) / ddays(1))
 
-#' Number of cases per country.
-#+
-covid %>% 
-  mutate(cum_cases = cumsum(cases)) %>% 
-  ungroup() %>% 
+#' Number of cases and deaths per country.
+#+ cumsums
+covid <- covid %>% 
+  mutate(cum_cases = cumsum(cases),
+         cum_deaths = cumsum(deaths)) %>% 
+  ungroup()
+
+#+ plot-cases
+p <- covid %>% 
   ggplot(aes(day, cum_cases)) +
   geom_line(aes(group = country)) +
   labs(x = "Days since first case in each country", 
        y = "Cumulative number of cases",
        caption = "Each line represents one country")
+ggsave("plots/cumulative_number_of_cases.png", p)
 
+#+ echo=FALSE
+knitr::include_graphics(here("plots/cumulative_number_of_cases.png"))
 
 #' Number of deaths per country.
-#+
-covid %>% 
-  mutate(cum_deaths = cumsum(deaths)) %>% 
+#+ plot-deaths
+p <- covid %>% 
+  mutate() %>% 
   ungroup() %>% 
   ggplot(aes(day, cum_deaths)) +
   geom_line(aes(group = country)) +
   labs(x = "Days since first death in each country", 
        y = "Cumulative number of deaths",
        caption = "Each line represents one country")
+ggsave("plots/cumulative_number_of_deaths.png", p)
 
+#+ echo=FALSE
+knitr::include_graphics(here("plots/cumulative_number_of_deaths.png"))
 
+#' Fit dose response model to data.
+#+ mod
+f <- bf(cum_cases ~ top / (1 + 10 ^ ((LogEC50 - day))), 
+        top ~ (1 | country), 
+        LogEC50 ~ (1 | country), nl = TRUE)
+mod <- brm(f, data = covid)
