@@ -1,0 +1,111 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library("tidyverse")
+library("readxl")
+library("here")
+library("glue")
+library("brms")
+library("jcolors")
+```
+
+```{r}
+if (!dir.exists(here("data"))) {
+  system(glue("mkdir {here('data')}"))
+}
+yesterday <- Sys.Date() - 1
+dataset <- here(glue("data/COVID-19-geographic-disbtribution-worldwide-{yesterday}.xlsx"))
+if (!file.exists(dataset)) {
+  url <- glue("https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-{yesterday}.xlsx")
+  system(glue("curl -o {dataset} {url}"))
+} 
+
+#' Importing downloaded dataset.
+#+ import
+sheet_1 <- excel_sheets(dataset)[1]
+covid <- read_excel(dataset, sheet = sheet_1)
+covid <- covid %>% 
+  rename(Country = `Countries and territories`) %>% 
+  rename_all(tolower) %>% 
+  mutate(date = paste(year, month, day, sep = "-"))
+
+```
+
+```{r}
+ggplot(covid %>% filter(daterep> "2020-03-01"), aes(daterep, cases, color=geoid))+
+  geom_line()+
+  theme(legend.position = "none")
+```
+
+```{r}
+cov <- covid %>% arrange(geoid, daterep) %>% 
+  group_by(geoid) %>% 
+  mutate(cumulative_cases= cumsum(cases), 
+         cumulative_deaths=cumsum(deaths), 
+         risk=cumulative_deaths/cumulative_cases,
+         lag_cases_7 = dplyr::lag(cumulative_cases, n=7),
+         risk_7=cumulative_deaths/lag_cases_7)
+```
+
+```{r}
+ggplot(cov %>% filter(daterep> "2020-03-01"), aes(daterep, cumulative_cases, color=geoid))+
+  geom_line()+
+  theme(legend.position = "none")
+```
+
+```{r}
+cov1 <- cov %>% group_by(country) %>% filter(max(cases)>1000)
+ggplot(cov1 %>% filter(daterep> "2020-03-05"), aes(daterep, cumulative_cases, color=country))+
+  geom_line()+
+  scale_color_jcolors(palette = "rainbow")
+```
+
+```{r}
+ggplot(cov %>% filter(daterep> "2020-03-05", 
+                      country %in% c("Estonia", 
+                                     "Finland", 
+                                     "Latvia", 
+                                     "Russia", 
+                                     "Lithuania")), 
+       aes(daterep, cumulative_cases, color=country))+
+  geom_line()
+```
+
+```{r}
+ggplot(cov %>% filter(daterep> "2020-03-05", 
+                      country %in% c("Estonia", 
+                                     "Finland", 
+                                     "Latvia", 
+                                     "Russia", 
+                                     "Lithuania")), 
+       aes(daterep, cumulative_deaths, color=country))+
+  geom_line()
+```
+
+```{r}
+cov1 <- cov %>% group_by(country) %>% filter(max(cases)>1000)
+ggplot(cov1 %>% filter(daterep> "2020-03-05"), aes(daterep, cumulative_deaths, color=country))+
+  geom_line()+
+  scale_color_jcolors(palette = "rainbow")
+```
+
+suremine tormab testimisest mõõda:
+```{r}
+cov1 <- cov %>% group_by(country) %>% filter(max(cases)>1000)
+ggplot(cov1 %>% filter(daterep> "2020-03-05"), aes(daterep, risk, color=country))+
+  geom_line()+
+  scale_color_jcolors(palette = "rainbow")
+```
+
+7 päevases nihkes on suremine stabiilsem -- näib ikkagi kõvasti hiinat ületavat.
+
+```{r}
+cov1 <- cov %>% group_by(country) %>% filter(max(cases)>1000)
+ggplot(cov1 %>% filter(daterep> "2020-03-11"), aes(daterep, risk_7, color=country))+
+  geom_line()+
+  scale_color_jcolors(palette = "rainbow")
+```
+
