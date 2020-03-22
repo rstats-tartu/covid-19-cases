@@ -1,7 +1,7 @@
 Covid-19 cases
 ================
 rstats-tartu
-2020-03-22 14:10:37
+2020-03-22 16:23:55
 
 Daily covid-19 data is from [European Centre for Disease Prevention and
 Control](https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide).
@@ -50,12 +50,17 @@ covid <- covid %>%
   mutate(day = interval(daterep, yesterday) / ddays(1))
 ```
 
-Number of cases per country.
+Number of cases and deaths per country.
+
+``` r
+covid <- covid %>% 
+  mutate(cum_cases = cumsum(cases),
+         cum_deaths = cumsum(deaths)) %>% 
+  ungroup()
+```
 
 ``` r
 covid %>% 
-  mutate(cum_cases = cumsum(cases)) %>% 
-  ungroup() %>% 
   ggplot(aes(day, cum_cases)) +
   geom_line(aes(group = country)) +
   labs(x = "Days since first case in each country", 
@@ -63,14 +68,12 @@ covid %>%
        caption = "Each line represents one country")
 ```
 
-![](/__w/covid-19-cases/covid-19-cases/README_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+![](README_files/figure-gfm/plot-cases-1.png)<!-- -->
 
 Number of deaths per country.
 
 ``` r
 covid %>% 
-  mutate(cum_deaths = cumsum(deaths)) %>% 
-  ungroup() %>% 
   ggplot(aes(day, cum_deaths)) +
   geom_line(aes(group = country)) +
   labs(x = "Days since first death in each country", 
@@ -78,4 +81,13 @@ covid %>%
        caption = "Each line represents one country")
 ```
 
-![](/__w/covid-19-cases/covid-19-cases/README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+![](README_files/figure-gfm/plot-deaths-1.png)<!-- -->
+
+Fit dose response model to data.
+
+``` r
+# f <- bf(cum_cases ~ plateau * (1 - exp(-k * day)), 
+#         plateau ~ 1 + (1 | country), 
+#         k ~ 1 + (1 | country), nl = TRUE)
+# mod <- brm(f, data = covid, family = gaussian())
+```
