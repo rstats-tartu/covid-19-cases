@@ -1,7 +1,7 @@
 #' ---
 #' title: Covid-19 cases
 #' author: rstats-tartu
-#' date: "`r Sys.Date()`"
+#' date: "`r Sys.time()`"
 #' ---
 #' 
 #' 
