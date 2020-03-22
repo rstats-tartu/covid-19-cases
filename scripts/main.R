@@ -16,9 +16,11 @@ knitr::opts_chunk$set(message = FALSE)
 #+ libs
 library("dplyr")
 library("readxl")
+library("lubridate")
 library("here")
 library("glue")
 library("brms")
+library("ggplot2")
 
 #' Downloading dataset
 #+ download
@@ -38,12 +40,51 @@ sheet_1 <- excel_sheets(dataset)[1]
 covid <- read_excel(dataset, sheet = sheet_1)
 covid <- covid %>% 
   rename(Country = `Countries and territories`) %>% 
-  rename_all(tolower) %>% 
-  mutate(date = paste(year, month, day, sep = "-"))
+  rename_all(tolower)
 
-#' 
+#' Days since first case in each country
 #+
-covid
-  
-  
+covid <- covid %>% 
+  group_by(country) %>% 
+  mutate(day = interval(daterep, yesterday) / ddays(1))
 
+#' Number of cases and deaths per country.
+#+ cumsums
+covid <- covid %>% 
+  mutate(cum_cases = cumsum(cases),
+         cum_deaths = cumsum(deaths)) %>% 
+  ungroup()
+
+#+ plot-cases
+p <- covid %>% 
+  ggplot(aes(day, cum_cases)) +
+  geom_line(aes(group = country)) +
+  labs(x = "Days since first case in each country", 
+       y = "Cumulative number of cases",
+       caption = "Each line represents one country")
+ggsave("plots/cumulative_number_of_cases.png", p)
+
+#+ echo=FALSE
+knitr::include_graphics(here("plots/cumulative_number_of_cases.png"))
+
+#' Number of deaths per country.
+#+ plot-deaths
+p <- covid %>% 
+  mutate() %>% 
+  ungroup() %>% 
+  ggplot(aes(day, cum_deaths)) +
+  geom_line(aes(group = country)) +
+  labs(x = "Days since first death in each country", 
+       y = "Cumulative number of deaths",
+       caption = "Each line represents one country")
+ggsave("plots/cumulative_number_of_deaths.png", p)
+
+#+ echo=FALSE
+knitr::include_graphics(here("plots/cumulative_number_of_deaths.png"))
+
+#' Fit dose response model to data.
+#+ mod
+f <- bf(cum_cases ~ top / (1 + 10 ^ ((LogEC50 - day))), 
+        top ~ (1 | country), 
+        LogEC50 ~ (1 | country), nl = TRUE)
+mod <- brm(f, data = covid)
