@@ -12,7 +12,7 @@ jobs:
           Rscript -e "remotes::install_deps(dependencies = TRUE, repos = 'https://demo.rstudiopm.com/all/__linux__/bionic/latest')"
       - name: Render Site
         run: |-
-          Rscript -e "rmarkdown::render_site(encoding = 'UTF-8')"
+          Rscript -e "rmarkdown::render("scripts/main.R", output_format = "github_document", output_file = here("README.md"))"
           echo "::set-env name=DEPLOY_PATH::$(Rscript -e "cat(rmarkdown::site_config()[['output_dir']])")"
       - name: Deploy to GitHub Pages
         if: github.ref == 'refs/heads/master'
