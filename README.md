@@ -1,7 +1,7 @@
 Covid-19 cases
 ================
 rstats-tartu
-2020-03-22 16:23:55
+2020-03-22 21:28:46
 
 Daily covid-19 data is from [European Centre for Disease Prevention and
 Control](https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide).
@@ -46,22 +46,26 @@ Days since first case in each country
 
 ``` r
 covid <- covid %>% 
-  group_by(country) %>% 
-  mutate(day = interval(daterep, yesterday) / ddays(1))
+  group_by(country, ) %>% 
+  mutate(tp = interval(daterep, yesterday) / ddays(1))
 ```
 
-Number of cases and deaths per country.
+Number of cases and deaths per country. Keep only informative rows.
 
 ``` r
+lag_n <- 7
 covid <- covid %>% 
-  mutate(cum_cases = cumsum(cases),
-         cum_deaths = cumsum(deaths)) %>% 
-  ungroup()
+  mutate(cum_cases = with_order(tp, cumsum, cases),
+         cum_deaths = with_order(tp, cumsum, deaths),
+         risk = cum_deaths / cum_cases,
+         risk_lag = cum_deaths / lag(cum_cases, n = lag_n, order_by = tp)) %>% 
+  ungroup() %>% 
+  filter(cases != 0, deaths !=0)
 ```
 
 ``` r
 covid %>% 
-  ggplot(aes(day, cum_cases)) +
+  ggplot(aes(tp, cum_cases)) +
   geom_line(aes(group = country)) +
   labs(x = "Days since first case in each country", 
        y = "Cumulative number of cases",
@@ -74,7 +78,7 @@ Number of deaths per country.
 
 ``` r
 covid %>% 
-  ggplot(aes(day, cum_deaths)) +
+  ggplot(aes(tp, cum_deaths)) +
   geom_line(aes(group = country)) +
   labs(x = "Days since first death in each country", 
        y = "Cumulative number of deaths",
@@ -83,11 +87,37 @@ covid %>%
 
 ![](README_files/figure-gfm/plot-deaths-1.png)<!-- -->
 
-Fit dose response model to data.
+Risk
 
 ``` r
-# f <- bf(cum_cases ~ plateau * (1 - exp(-k * day)), 
-#         plateau ~ 1 + (1 | country), 
-#         k ~ 1 + (1 | country), nl = TRUE)
-# mod <- brm(f, data = covid, family = gaussian())
+covid %>% 
+  filter(!is.na(risk)) %>% 
+  ggplot(aes(tp, risk)) +
+  geom_line(aes(group = country)) +
+  labs(x = "Time, days from first case", 
+       y = "Risk of death",
+       caption = "Each line represents one country")
 ```
+
+![](README_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+
+Lagged (7 days) risk.
+
+``` r
+covid %>% 
+  filter(!is.na(risk)) %>% 
+  ggplot(aes(tp, risk_lag)) +
+  geom_line(aes(group = country)) +
+  scale_y_log10() +
+  labs(x = "Time, days from first case", 
+       y = "Risk of death",
+       caption = "Each line represents one country")
+```
+
+    ## Warning in self$trans$transform(x): NaNs produced
+
+    ## Warning: Transformation introduced infinite values in continuous y-axis
+
+    ## Warning: Removed 191 row(s) containing missing values (geom_path).
+
+![](README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
