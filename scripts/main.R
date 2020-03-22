@@ -14,7 +14,7 @@ knitr::opts_chunk$set(message = FALSE)
 
 #' Loading libraries
 #+ libs
-library("tidyverse")
+library("dplyr")
 library("readxl")
 library("here")
 library("glue")
