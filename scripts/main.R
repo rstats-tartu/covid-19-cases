@@ -62,7 +62,7 @@ p <- covid %>%
   labs(x = "Days since first case in each country", 
        y = "Cumulative number of cases",
        caption = "Each line represents one country")
-ggsave("plots/cumulative_number_of_cases.png", p)
+ggsave(here("plots/cumulative_number_of_cases.png"), p)
 
 #+ echo=FALSE
 knitr::include_graphics(here("plots/cumulative_number_of_cases.png"))
@@ -77,7 +77,7 @@ p <- covid %>%
   labs(x = "Days since first death in each country", 
        y = "Cumulative number of deaths",
        caption = "Each line represents one country")
-ggsave("plots/cumulative_number_of_deaths.png", p)
+ggsave(here("plots/cumulative_number_of_deaths.png"), p)
 
 #+ echo=FALSE
 knitr::include_graphics(here("plots/cumulative_number_of_deaths.png"))
