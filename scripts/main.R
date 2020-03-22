@@ -45,22 +45,24 @@ covid <- covid %>%
 #' Days since first case in each country
 #+
 covid <- covid %>% 
-  group_by(country) %>% 
-  mutate(day = interval(daterep, yesterday) / ddays(1))
+  group_by(country, ) %>% 
+  mutate(tp = interval(daterep, yesterday) / ddays(1))
 
 #' Number of cases and deaths per country.
+#' Keep only informative rows.
 #+ cumsums
-lag_n <- 12
+lag_n <- 7
 covid <- covid %>% 
-  mutate(cum_cases = cumsum(cases),
-         cum_deaths = cumsum(deaths),
+  mutate(cum_cases = with_order(tp, cumsum, cases),
+         cum_deaths = with_order(tp, cumsum, deaths),
          risk = cum_deaths / cum_cases,
          risk_lag = cum_deaths / lag(cum_cases, n = lag_n)) %>% 
-  ungroup()
+  ungroup() %>% 
+  filter(cases != 0, deaths !=0)
 
 #+ plot-cases
 covid %>% 
-  ggplot(aes(day, cum_cases)) +
+  ggplot(aes(tp, cum_cases)) +
   geom_line(aes(group = country)) +
   labs(x = "Days since first case in each country", 
        y = "Cumulative number of cases",
@@ -69,7 +71,7 @@ covid %>%
 #' Number of deaths per country.
 #+ plot-deaths
 covid %>% 
-  ggplot(aes(day, cum_deaths)) +
+  ggplot(aes(tp, cum_deaths)) +
   geom_line(aes(group = country)) +
   labs(x = "Days since first death in each country", 
        y = "Cumulative number of deaths",
@@ -79,7 +81,7 @@ covid %>%
 #+
 covid %>% 
   filter(!is.na(risk)) %>% 
-  ggplot(aes(day, risk)) +
+  ggplot(aes(tp, risk)) +
   geom_line(aes(group = country)) +
   labs(x = "Time, days from first case", 
        y = "Risk of death",
@@ -88,7 +90,7 @@ covid %>%
 
 covid %>% 
   filter(!is.na(risk)) %>% 
-  ggplot(aes(day, risk_lag)) +
+  ggplot(aes(tp, risk_lag)) +
   geom_line(aes(group = country)) +
   scale_y_log10() +
   labs(x = "Time, days from first case", 
