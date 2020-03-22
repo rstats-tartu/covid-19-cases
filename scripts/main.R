@@ -56,35 +56,25 @@ covid <- covid %>%
   ungroup()
 
 #+ plot-cases
-p <- covid %>% 
+covid %>% 
   ggplot(aes(day, cum_cases)) +
   geom_line(aes(group = country)) +
   labs(x = "Days since first case in each country", 
        y = "Cumulative number of cases",
        caption = "Each line represents one country")
-ggsave("plots/cumulative_number_of_cases.png", p)
-
-#+ echo=FALSE
-knitr::include_graphics(here("plots/cumulative_number_of_cases.png"))
 
 #' Number of deaths per country.
 #+ plot-deaths
-p <- covid %>% 
-  mutate() %>% 
-  ungroup() %>% 
+covid %>% 
   ggplot(aes(day, cum_deaths)) +
   geom_line(aes(group = country)) +
   labs(x = "Days since first death in each country", 
        y = "Cumulative number of deaths",
        caption = "Each line represents one country")
-ggsave("plots/cumulative_number_of_deaths.png", p)
-
-#+ echo=FALSE
-knitr::include_graphics(here("plots/cumulative_number_of_deaths.png"))
 
 #' Fit dose response model to data.
 #+ mod
-f <- bf(cum_cases ~ plateau * (1 - exp(-k * day)), 
-        plateau ~ 1 + (1 | country), 
-        k ~ 1 + (1 | country), nl = TRUE)
-mod <- brm(f, data = covid, family = gaussian())
+# f <- bf(cum_cases ~ plateau * (1 - exp(-k * day)), 
+#         plateau ~ 1 + (1 | country), 
+#         k ~ 1 + (1 | country), nl = TRUE)
+# mod <- brm(f, data = covid, family = gaussian())
