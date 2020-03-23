@@ -8,7 +8,7 @@ library("tidyverse")
 library("readxl")
 library("here")
 library("glue")
-library("brms")
+library("directlabels")
 library("jcolors")
 ```
 
@@ -70,6 +70,7 @@ uued nakatumised globaalselt, silutud liikuva keskmisega (k=3)
 ```{r}
 ggplot(cov %>% filter(daterep> "2020-03-01"), aes(daterep, smoothed_cases, color=geoid))+
   geom_line()+
+  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
   ggthemes::theme_tufte()+
   theme(legend.position = "none")+
   xlab(NULL)
@@ -79,6 +80,7 @@ uued surmad globaalselt, silutud liikuva keskmisega (k=3)
 ```{r}
 ggplot(cov %>% filter(daterep> "2020-03-01"), aes(daterep, smoothed_deaths, color=geoid))+
   geom_line()+
+  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
   ggthemes::theme_tufte()+
   theme(legend.position = "none")+
   xlab(NULL)
@@ -89,6 +91,7 @@ kumulatiivne nakatunute arv riigiti.
 ggplot(cov %>% filter(daterep> "2020-03-01"), 
        aes(daterep, cumulative_cases, color=geoid))+
   geom_line()+
+  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
   ggthemes::theme_tufte()+
   theme(legend.position = "none")+
   xlab(NULL)
@@ -99,8 +102,10 @@ kumulatiivne nakatunute arv riigiti: suurimad nakkuskolded
 ```{r}
 ggplot(cov1 %>% filter(daterep> "2020-03-05"), aes(daterep, cumulative_cases, color=country))+
   geom_line()+
+  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
   scale_color_jcolors(palette = "rainbow")+
   ggthemes::theme_tufte()+
+  theme(legend.position = "none")+
   xlab(NULL)
 ```
 
@@ -115,7 +120,9 @@ ggplot(cov %>% filter(daterep> "2020-03-05",
                                      "Sweden")), 
        aes(daterep, cumulative_cases, color=country))+
   geom_line()+
+  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
   ggthemes::theme_tufte()+
+  #theme(legend.position = "none")+
   xlab(NULL)
 ```
 
@@ -140,7 +147,9 @@ ggplot(cov1 %>% filter(daterep> "2020-03-01"), aes(daterep, cumulative_deaths, c
   geom_line()+
   ggthemes::theme_tufte()+
   xlab(NULL)+
-  scale_color_jcolors(palette = "rainbow")
+  scale_color_jcolors(palette = "rainbow")+
+  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
+  theme(legend.position = "none")
 ```
 
 suremine tormab testimisest mõõda:
@@ -149,7 +158,9 @@ ggplot(cov1 %>% filter(daterep> "2020-03-05"), aes(daterep, risk, color=country)
   geom_line()+
   ggthemes::theme_tufte()+
   xlab(NULL)+
-  scale_color_jcolors(palette = "rainbow")
+  scale_color_jcolors(palette = "rainbow")+
+  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
+  theme(legend.position = "none")
 ```
 
 7 päevases nihkes on suremine stabiilsem -- näib ikkagi kõvasti hiinat ületavat.
@@ -159,6 +170,7 @@ ggplot(cov1 %>% filter(daterep> "2020-03-11"), aes(daterep, risk_7, color=countr
   geom_line()+
  ggthemes::theme_tufte()+
   xlab(NULL)+
-  scale_color_jcolors(palette = "rainbow")
+  scale_color_jcolors(palette = "rainbow")+
+  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))
 ```
 
