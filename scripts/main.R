@@ -56,15 +56,26 @@ covid_cum <- covid_by_country %>%
          risk_lag = cum_deaths / lag(cum_cases, n = lag_n, order_by = tp)) %>% 
   ungroup()
 
-
-#+
+#' Covid-19 cases. 
+#+ plot-cases-dates
 covid_cum %>% 
   ggplot(aes(daterep, cum_cases, group = country)) +
   geom_line() +
   geom_dl(aes(label = geoid), method = list("first.points", cex = 0.8)) +
   scale_y_log10() +
-  labs(x = "Days since first case in each country", 
+  labs(x = "Date", 
        y = "Cumulative number of cases",
+       caption = "Each line represents one country")
+
+#' Covid-19 deaths. 
+#+ plot-deaths-dates
+covid_cum %>% 
+  ggplot(aes(daterep, cum_deaths, group = country)) +
+  geom_line() +
+  geom_dl(aes(label = geoid), method = list("first.points", cex = 0.8)) +
+  scale_y_log10() +
+  labs(x = "Date", 
+       y = "Cumulative number of deaths",
        caption = "Each line represents one country")
 
 
