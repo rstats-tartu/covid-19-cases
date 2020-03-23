@@ -78,7 +78,7 @@ covid %>%
        caption = "Each line represents one country")
 
 #' Risk
-#+
+#+ plot-risk
 covid %>% 
   filter(!is.na(risk)) %>% 
   ggplot(aes(tp, risk)) +
@@ -88,7 +88,7 @@ covid %>%
        caption = "Each line represents one country")
 
 #' Lagged (7 days) risk.
-#+
+#+ plot-risk-lag, warning=FALSE
 covid %>% 
   filter(!is.na(risk)) %>% 
   ggplot(aes(tp, risk_lag)) +

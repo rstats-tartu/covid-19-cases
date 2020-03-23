@@ -1,7 +1,7 @@
 Covid-19 cases
 ================
 rstats-tartu
-2020-03-22 21:28:46
+2020-03-23 15:32:05
 
 Daily covid-19 data is from [European Centre for Disease Prevention and
 Control](https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide).
@@ -99,7 +99,7 @@ covid %>%
        caption = "Each line represents one country")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+![](README_files/figure-gfm/plot-risk-1.png)<!-- -->
 
 Lagged (7 days) risk.
 
@@ -114,10 +114,4 @@ covid %>%
        caption = "Each line represents one country")
 ```
 
-    ## Warning in self$trans$transform(x): NaNs produced
-
-    ## Warning: Transformation introduced infinite values in continuous y-axis
-
-    ## Warning: Removed 191 row(s) containing missing values (geom_path).
-
-![](README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+![](README_files/figure-gfm/plot-risk-lag-1.png)<!-- -->
