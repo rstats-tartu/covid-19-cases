@@ -15,6 +15,7 @@ knitr::opts_chunk$set(message = FALSE)
 #' Loading libraries
 #+ libs
 library("dplyr")
+library("tidyr")
 library("readxl")
 library("lubridate")
 library("here")
@@ -44,44 +45,60 @@ covid <- covid %>%
 
 #' Days since first case in each country
 #+
-covid <- covid %>% 
-  group_by(country, ) %>% 
-  mutate(tp = interval(daterep, yesterday) / ddays(1))
+covid_by_country <- covid %>% 
+  filter(cases != 0, deaths != 0) %>% 
+  group_by(country) %>% 
+  mutate(tp = interval(yesterday, daterep) / ddays(1),
+         tp = tp - min(tp))
 
 #' Number of cases and deaths per country.
 #' Keep only informative rows.
 #+ cumsums
 lag_n <- 7
-covid <- covid %>% 
+covid_cum <- covid_by_country %>% 
+  
   mutate(cum_cases = with_order(tp, cumsum, cases),
          cum_deaths = with_order(tp, cumsum, deaths),
          risk = cum_deaths / cum_cases,
          risk_lag = cum_deaths / lag(cum_cases, n = lag_n, order_by = tp)) %>% 
-  ungroup() %>% 
-  filter(cases != 0, deaths !=0)
+  ungroup()
 
+
+#+
+covid_cum %>% 
+  ggplot() +
+  geom_line(aes(daterep, cum_cases, group = country)) +
+  scale_y_log10() +
+  labs(x = "Days since first case in each country", 
+       y = "Cumulative number of cases",
+       caption = "Each line represents one country")
+
+
+#' Cases on relative time scale.
 #+ plot-cases
-covid %>% 
-  ggplot(aes(tp, cum_cases)) +
-  geom_line(aes(group = country)) +
+covid_cum %>% 
+  ggplot() +
+  geom_line(aes(tp, cum_cases, group = country)) +
+  scale_y_log10() +
   labs(x = "Days since first case in each country", 
        y = "Cumulative number of cases",
        caption = "Each line represents one country")
 
 #' Number of deaths per country.
 #+ plot-deaths
-covid %>% 
+covid_cum %>% 
   ggplot(aes(tp, cum_deaths)) +
   geom_line(aes(group = country)) +
+  scale_y_log10() +
   labs(x = "Days since first death in each country", 
        y = "Cumulative number of deaths",
        caption = "Each line represents one country")
 
 #' Risk
 #+ plot-risk
-covid %>% 
-  filter(!is.na(risk)) %>% 
+covid_cum %>% 
   ggplot(aes(tp, risk)) +
+  scale_y_log10() +
   geom_line(aes(group = country)) +
   labs(x = "Time, days from first case", 
        y = "Risk of death",
@@ -89,8 +106,7 @@ covid %>%
 
 #' Lagged (7 days) risk.
 #+ plot-risk-lag, warning=FALSE
-covid %>% 
-  filter(!is.na(risk)) %>% 
+covid_cum %>% 
   ggplot(aes(tp, risk_lag)) +
   geom_line(aes(group = country)) +
   scale_y_log10() +
