@@ -1,21 +1,17 @@
 Covid-19 cases
 ================
 rstats-tartu
-2020-03-23 14:41:22
+2020-03-23 15:59:22
 
 Daily covid-19 data is from [European Centre for Disease Prevention and
 Control](https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide).
 
-Loading libraries
+Loading
+libraries
 
 ``` r
-library("dplyr")
-library("readxl")
-library("lubridate")
-library("here")
-library("glue")
-library("brms")
-library("ggplot2")
+pkg <- c("dplyr", "tidyr", "readxl", "lubridate", "here", "glue", "brms", "ggplot2", "directlabels")
+invisible(lapply(pkg, library, character.only = TRUE))
 ```
 
 Downloading dataset
@@ -45,28 +41,46 @@ covid <- covid %>%
 Days since first case in each country
 
 ``` r
-covid <- covid %>% 
-  group_by(country, ) %>% 
-  mutate(tp = interval(daterep, yesterday) / ddays(1))
+covid_by_country <- covid %>% 
+  filter(cases != 0, deaths != 0) %>% 
+  group_by(country) %>% 
+  mutate(tp = interval(yesterday, daterep) / ddays(1),
+         tp = tp - min(tp))
 ```
 
 Number of cases and deaths per country. Keep only informative rows.
 
 ``` r
 lag_n <- 7
-covid <- covid %>% 
+covid_cum <- covid_by_country %>% 
   mutate(cum_cases = with_order(tp, cumsum, cases),
          cum_deaths = with_order(tp, cumsum, deaths),
          risk = cum_deaths / cum_cases,
          risk_lag = cum_deaths / lag(cum_cases, n = lag_n, order_by = tp)) %>% 
-  ungroup() %>% 
-  filter(cases != 0, deaths !=0)
+  ungroup()
 ```
 
 ``` r
-covid %>% 
-  ggplot(aes(tp, cum_cases)) +
-  geom_line(aes(group = country)) +
+covid_cum %>% 
+  ggplot(aes(daterep, cum_cases, group = country)) +
+  geom_line() +
+  geom_dl(aes(label = geoid), method = list("first.points", cex = 0.8)) +
+  scale_y_log10() +
+  labs(x = "Days since first case in each country", 
+       y = "Cumulative number of cases",
+       caption = "Each line represents one country")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+
+Cases on relative time scale.
+
+``` r
+covid_cum %>% 
+  ggplot(aes(tp, cum_cases, group = country)) +
+  geom_line() +
+  geom_dl(aes(label = geoid), method = list("last.points", cex = 0.8)) +
+  scale_y_log10() +
   labs(x = "Days since first case in each country", 
        y = "Cumulative number of cases",
        caption = "Each line represents one country")
@@ -77,9 +91,11 @@ covid %>%
 Number of deaths per country.
 
 ``` r
-covid %>% 
+covid_cum %>% 
   ggplot(aes(tp, cum_deaths)) +
   geom_line(aes(group = country)) +
+  geom_dl(aes(label = geoid), method = list("last.points", cex = 0.8)) +
+  scale_y_log10() +
   labs(x = "Days since first death in each country", 
        y = "Cumulative number of deaths",
        caption = "Each line represents one country")
@@ -90,10 +106,11 @@ covid %>%
 Risk
 
 ``` r
-covid %>% 
-  filter(!is.na(risk)) %>% 
+covid_cum %>% 
   ggplot(aes(tp, risk)) +
   geom_line(aes(group = country)) +
+  geom_dl(aes(label = geoid), method = list("last.points", cex = 0.8)) +
+  scale_y_log10() +
   labs(x = "Time, days from first case", 
        y = "Risk of death",
        caption = "Each line represents one country")
@@ -104,10 +121,10 @@ covid %>%
 Lagged (7 days) risk.
 
 ``` r
-covid %>% 
-  filter(!is.na(risk)) %>% 
+covid_cum %>% 
   ggplot(aes(tp, risk_lag)) +
   geom_line(aes(group = country)) +
+  geom_dl(aes(label = geoid), method = list("last.points", cex = 0.8)) +
   scale_y_log10() +
   labs(x = "Time, days from first case", 
        y = "Risk of death",
