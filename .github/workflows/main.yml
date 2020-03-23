@@ -1,5 +1,10 @@
 name: Render and Deploy RMarkdown Website
-'on': push
+on: 
+  push:
+    branches:
+      - master
+  schedule:
+    - cron:  "0 9 * * *"
 jobs:
   build:
     runs-on: ubuntu-18.04
