@@ -10,9 +10,11 @@ library("here")
 library("glue")
 library("directlabels")
 library("jcolors")
+library("lubridate")
 ```
 
 ```{r}
+#taavi kood
 if (!dir.exists(here("data"))) {
   system(glue("mkdir {here('data')}"))
 }
@@ -34,24 +36,6 @@ covid <- covid %>%
 
 ```
 
-uute nakatumiste arv globaalselt
-```{r}
-ggplot(covid %>% filter(daterep> "2020-03-01"), aes(daterep, cases, color=geoid))+
-  geom_col()+
-  ggthemes::theme_tufte()+
-  theme(legend.position = "none")+
-  xlab(NULL)
-```
-
-uute nakatumiste arv Eestis
-```{r}
-ggplot(covid %>% filter(daterep> "2020-03-01", country== "Estonia"), aes(daterep, cases, color=geoid))+
-  geom_col()+
-  ggthemes::theme_tufte()+
-  theme(legend.position = "none")+
-  xlab(NULL)
-```
-
 ```{r}
 cov <- covid %>% arrange(geoid, daterep) %>% 
   group_by(geoid) %>% 
@@ -64,11 +48,73 @@ cov <- covid %>% arrange(geoid, daterep) %>%
          smoothed_deaths =zoo::rollmean(deaths, k=3, fill=NA))
 
 cov1 <- cov %>% group_by(country) %>% filter(max(cumulative_cases)>10000)
+
+#taavi kood:
+covid_by_country1 <- covid %>% 
+  filter(cases > 100) %>% 
+  group_by(country) %>% 
+  mutate(tp = interval(yesterday, daterep) / ddays(1),
+         tp = tp - min(tp))
+lag_n <- 7
+covid_cum1 <- covid_by_country1 %>% 
+  mutate(cum_cases = with_order(tp, cumsum, cases),
+         cum_deaths = with_order(tp, cumsum, deaths),
+         risk = cum_deaths / cum_cases,
+         risk_lag = cum_deaths / lag(cum_cases, n = lag_n, order_by = tp)) %>% 
+  ungroup() %>% filter(geoid != "JPG11668")
+
+covid_by_country2 <- covid %>% 
+  filter(deaths > 20) %>% 
+  group_by(country) %>% 
+  mutate(tp = interval(yesterday, daterep) / ddays(1),
+         tp = tp - min(tp))
+lag_n <- 7
+covid_cum2 <- covid_by_country2 %>% 
+  mutate(cum_cases = with_order(tp, cumsum, cases),
+         cum_deaths = with_order(tp, cumsum, deaths),
+         risk = cum_deaths / cum_cases,
+         risk_lag = cum_deaths / lag(cum_cases, n = lag_n, order_by = tp)) %>% 
+  ungroup() %>% filter(geoid != "JPG11668")
 ```
 
-uued nakatumised globaalselt, silutud liikuva keskmisega (k=3)
+
+# 1. globaalne
+
+## Uute nakatumiste arv
 ```{r}
-ggplot(cov %>% filter(daterep> "2020-03-01"), aes(daterep, smoothed_cases, color=geoid))+
+ggplot(covid %>% filter(daterep> "2020-03-01"), aes(daterep, cases, color=geoid))+
+  geom_col()+
+  ggthemes::theme_tufte()+
+  theme(legend.position = "none")+
+  xlab(NULL)
+```
+
+## Uute surmade arv 
+```{r}
+ggplot(covid %>% filter(daterep> "2020-03-01"), aes(daterep, deaths, color=geoid))+
+  geom_col()+
+  ggthemes::theme_tufte()+
+  theme(legend.position = "none")+
+  xlab(NULL)
+```
+
+## Uued nakatumised ja uued surmad log-skaalas.
+```{r warning=FALSE, message=FALSE}
+ggplot(covid %>% filter(daterep> "2020-03-01"), 
+       aes(daterep, cases))+
+  geom_col(fill="grey")+
+  geom_col(aes(y=deaths), fill="black")+
+  ggthemes::theme_tufte()+
+  theme(legend.position = "none")+
+  xlab(NULL)+
+  ylab(NULL)+
+  scale_y_log10(breaks=NULL)
+```
+
+## uued nakatumised, silutud liikuva keskmisega (k=3)
+```{r warning=FALSE}
+ggplot(cov %>% filter(daterep> "2020-03-01"), 
+       aes(daterep, smoothed_cases, color=geoid))+
   geom_line()+
   geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
   ggthemes::theme_tufte()+
@@ -76,7 +122,7 @@ ggplot(cov %>% filter(daterep> "2020-03-01"), aes(daterep, smoothed_cases, color
   xlab(NULL)
 ```
 
-uued surmad globaalselt, silutud liikuva keskmisega (k=3)
+## uued surmad, silutud liikuva keskmisega (k=3)
 ```{r}
 ggplot(cov %>% filter(daterep> "2020-03-01"), aes(daterep, smoothed_deaths, color=geoid))+
   geom_line()+
@@ -86,7 +132,7 @@ ggplot(cov %>% filter(daterep> "2020-03-01"), aes(daterep, smoothed_deaths, colo
   xlab(NULL)
 ```
 
-kumulatiivne nakatunute arv riigiti.
+## kumulatiivne nakatunute arv riigiti.
 ```{r}
 ggplot(cov %>% filter(daterep> "2020-03-01"), 
        aes(daterep, cumulative_cases, color=geoid))+
@@ -97,7 +143,23 @@ ggplot(cov %>% filter(daterep> "2020-03-01"),
   xlab(NULL)
 ```
 
-kumulatiivne nakatunute arv riigiti: suurimad nakkuskolded
+riikide epideemiad on alguspunkti järgi joondatud
+```{r}
+covid_cum1 %>% 
+  ggplot(aes(tp, cum_cases, color = country)) +
+  geom_line() +
+  geom_dl(aes(label = geoid), method = list("last.points", cex = 0.8)) +
+  scale_y_log10() +
+  labs(x = "Days since first case in each country", 
+       y = "Cumulative number of cases")+
+  ggthemes::theme_tufte()+
+  theme(legend.position = "none")+
+  xlab(NULL)
+```
+
+alla 100 kumulatiivse haigusjuhu on eemaldatud, et jooni paremini kohakuti saada.
+
+## kumulatiivne nakatunute arv riigiti: suurimad nakkuskolded
 
 ```{r}
 ggplot(cov1 %>% filter(daterep> "2020-03-05"), aes(daterep, cumulative_cases, color=country))+
@@ -109,7 +171,74 @@ ggplot(cov1 %>% filter(daterep> "2020-03-05"), aes(daterep, cumulative_cases, co
   xlab(NULL)
 ```
 
-kumulatiivne nakatunute arv riigiti: meie lähinaabrid
+## Kumulatiivsed surmad: suurimad nakkuskolded
+```{r}
+ggplot(cov1 %>% filter(daterep> "2020-03-01"), aes(daterep, cumulative_deaths, color=country))+
+  geom_line()+
+  ggthemes::theme_tufte()+
+  xlab(NULL)+
+  scale_color_jcolors(palette = "rainbow")+
+  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
+  theme(legend.position = "none")
+```
+
+```{r}
+#taavi kood
+covid_cum2 %>% 
+  ggplot(aes(tp, cum_deaths)) +
+  geom_line(aes(color = country)) +
+  geom_dl(aes(label = geoid), method = list("last.points", cex = 0.8)) +
+  scale_y_log10() +
+  labs(x = "Days since first death in each country", 
+       y = "Cumulative number of deaths")+
+  ggthemes::theme_tufte()+
+  theme(legend.position = "none")
+```
+
+alla 20 kumulatiivse surma on pildilt eemaldatud, et jooni paremini kohakuti saada.
+
+## Suremine tormab testimisest mõõda:
+```{r}
+ggplot(cov1 %>% filter(daterep> "2020-03-05"), aes(daterep, risk, color=country))+
+  geom_line()+
+  ggthemes::theme_tufte()+
+  xlab(NULL)+
+  scale_color_jcolors(palette = "rainbow")+
+  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
+  theme(legend.position = "none")
+```
+risk = cumulative deaths / cumulative cases
+
+## 7-päevases nihkes haigusjuhtude surmarisk on stabiilsem.
+
+risk_7 = cumulative deaths / cumulative cases_lag_7
+
+```{r}
+ggplot(cov1 %>% filter(daterep> "2020-03-18"), aes(daterep, risk_7, color=country))+
+  geom_line()+
+ ggthemes::theme_tufte()+
+  xlab(NULL)+
+  scale_color_jcolors(palette = "rainbow")+
+  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))
+```
+
+riskihinnangute konvergents 7-päevase nihkega andmete peal
+```{r warning=FALSE}
+covid_cum %>% 
+  ggplot(aes(tp, risk_lag)) +
+  geom_line(aes(color = country)) +
+  geom_dl(aes(label = geoid), method = list("last.points", cex = 0.8)) +
+  scale_y_log10() +
+  labs(x = "Time, days from first case", 
+       y = "Risk of death")+
+  ggthemes::theme_tufte()+
+   theme(legend.position = "none")
+```
+
+
+# 2. Eesti võrdluses lähinaabritega
+
+## kumulatiivne nakatunute arv riigiti
 ```{r}
 ggplot(cov %>% filter(daterep> "2020-03-05", 
                       country %in% c("Estonia", 
@@ -126,7 +255,7 @@ ggplot(cov %>% filter(daterep> "2020-03-05",
   xlab(NULL)
 ```
 
-Kumulatiivsed surmad: meie lähinaabrid
+## Kumulatiivsed surmad
 ```{r}
 ggplot(cov %>% filter(daterep> "2020-03-05", 
                       country %in% c("Estonia", 
@@ -141,36 +270,15 @@ ggplot(cov %>% filter(daterep> "2020-03-05",
   xlab(NULL)
 ```
 
-Kumulatiivsed surmad: suurimad nakkuskolded
+# 3. Eesti
+
+## Uute nakatumiste arv Eestis
 ```{r}
-ggplot(cov1 %>% filter(daterep> "2020-03-01"), aes(daterep, cumulative_deaths, color=country))+
-  geom_line()+
+ggplot(covid %>% filter(daterep> "2020-03-01", country== "Estonia"), 
+       aes(daterep, cases))+
+  geom_col()+
   ggthemes::theme_tufte()+
+  theme(legend.position = "none")+
   xlab(NULL)+
-  scale_color_jcolors(palette = "rainbow")+
-  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
-  theme(legend.position = "none")
+  ylab("registreeritud haigusjuhud")
 ```
-
-suremine tormab testimisest mõõda:
-```{r}
-ggplot(cov1 %>% filter(daterep> "2020-03-05"), aes(daterep, risk, color=country))+
-  geom_line()+
-  ggthemes::theme_tufte()+
-  xlab(NULL)+
-  scale_color_jcolors(palette = "rainbow")+
-  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
-  theme(legend.position = "none")
-```
-
-7 päevases nihkes on suremine stabiilsem -- näib ikkagi kõvasti hiinat ületavat.
-
-```{r}
-ggplot(cov1 %>% filter(daterep> "2020-03-11"), aes(daterep, risk_7, color=country))+
-  geom_line()+
- ggthemes::theme_tufte()+
-  xlab(NULL)+
-  scale_color_jcolors(palette = "rainbow")+
-  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))
-```
-
