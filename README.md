@@ -1,12 +1,13 @@
 Covid-19 cases
 ================
 rstats-tartu
-2020-03-23 16:40:21
+2020-03-23 17:16:25
 
 Daily covid-19 data is from [European Centre for Disease Prevention and
 Control](https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide).
 
-Loading libraries
+Loading
+libraries
 
 ``` r
 pkg <- c("dplyr", "tidyr", "readxl", "lubridate", "here", "glue", "brms", "ggplot2", "directlabels")
@@ -59,18 +60,35 @@ covid_cum <- covid_by_country %>%
   ungroup()
 ```
 
+Covid-19 cases.
+
 ``` r
 covid_cum %>% 
   ggplot(aes(daterep, cum_cases, group = country)) +
   geom_line() +
   geom_dl(aes(label = geoid), method = list("first.points", cex = 0.8)) +
   scale_y_log10() +
-  labs(x = "Days since first case in each country", 
+  labs(x = "Date", 
        y = "Cumulative number of cases",
        caption = "Each line represents one country")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+![](README_files/figure-gfm/plot-cases-dates-1.png)<!-- -->
+
+Covid-19 deaths.
+
+``` r
+covid_cum %>% 
+  ggplot(aes(daterep, cum_deaths, group = country)) +
+  geom_line() +
+  geom_dl(aes(label = geoid), method = list("first.points", cex = 0.8)) +
+  scale_y_log10() +
+  labs(x = "Date", 
+       y = "Cumulative number of deaths",
+       caption = "Each line represents one country")
+```
+
+![](README_files/figure-gfm/plot-deaths-dates-1.png)<!-- -->
 
 Cases on relative time scale.
 
