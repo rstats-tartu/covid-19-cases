@@ -217,7 +217,8 @@ ggplot(cov1 %>% filter(daterep> "2020-03-18"), aes(daterep, risk_7, color=countr
   xlab(NULL)+
   scale_color_jcolors(palette = "rainbow")+
   geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8)) +
-  labs(caption = "risk_7 = cumulative deaths / cumulative cases_lag_7")
+  labs(caption = "risk_7 = cumulative deaths / cumulative cases_lag_7") +
+  theme(legend.position = "none")
 ```
 
 ### Riskihinnangute konvergents 7-päevase nihkega andmete peal
@@ -249,7 +250,8 @@ ggplot(cov %>% filter(daterep> "2020-03-05",
        aes(daterep, cumulative_cases, color=country))+
   geom_line()+
   geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
-  xlab(NULL)
+  xlab(NULL) +
+  theme(legend.position = "none")
 ```
 
 ## Kumulatiivsed surmad
@@ -264,7 +266,7 @@ ggplot(cov %>% filter(daterep> "2020-03-05",
                                      "Sweden")), 
        aes(daterep, cumulative_deaths, color=country))+
   geom_line()+
-  xlab(NULL)
+  xlab(NULL) + theme(legend.position = "none")
 ```
 
 # Eesti
