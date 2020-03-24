@@ -5,7 +5,7 @@ Website](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%2
 # COVID-19 cases and deaths
 
 rstats-tartu  
-last update: 2020-03-24 08:31:59
+last update: 2020-03-24 09:12:37
 
 ## Dataset
 
