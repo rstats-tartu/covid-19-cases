@@ -14,25 +14,14 @@ knitr::opts_chunk$set(message = FALSE)
 
 #' Loading libraries
 #+ libs
-pkg <- c("dplyr", "tidyr", "readxl", "lubridate", "here", "glue", "brms", "ggplot2", "directlabels")
+pkg <- c("dplyr", "tidyr", "readr", "lubridate", "here", "ggplot2", "directlabels")
 invisible(lapply(pkg, library, character.only = TRUE))
 
-#' Downloading dataset
-#+ download
-if (!dir.exists(here("data"))) {
-  system(glue("mkdir {here('data')}"))
-}
-yesterday <- Sys.Date() - 1
-dataset <- here(glue("data/COVID-19-geographic-disbtribution-worldwide-{yesterday}.xlsx"))
-if (!file.exists(dataset)) {
-  url <- glue("https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-{yesterday}.xlsx")
-  system(glue("curl -o {dataset} {url}"))
-} 
 
 #' Importing downloaded dataset.
 #+ import
-sheet_1 <- excel_sheets(dataset)[1]
-covid <- read_excel(dataset, sheet = sheet_1)
+path <- here("data/COVID-19-geographic-disbtribution-worldwide.csv")
+covid <- read_csv(path)
 covid <- covid %>% 
   rename(Country = `Countries and territories`) %>% 
   rename_all(tolower)
@@ -42,7 +31,7 @@ covid <- covid %>%
 covid_by_country <- covid %>% 
   filter(cases != 0, deaths != 0) %>% 
   group_by(country) %>% 
-  mutate(tp = interval(yesterday, daterep) / ddays(1),
+  mutate(tp = interval(Sys.Date(), daterep) / ddays(1),
          tp = tp - min(tp))
 
 #' Number of cases and deaths per country.
