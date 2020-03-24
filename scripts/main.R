@@ -1,18 +1,27 @@
 #' ---
-#' title: Covid-19 cases
-#' author: rstats-tartu
-#' date: "`r Sys.time()`"
+#' title: ""
+#' author: ""
+#' date: ""
 #' ---
 #' 
+#' ![Render and Deploy Website](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20Deploy%20RMarkdown%20Website/badge.svg)
 #' 
-#' Daily covid-19 data is from [European Centre for Disease Prevention 
+#' # COVID-19 cases and deaths
+#' rstats-tartu    
+#' last update: `r Sys.time()`
+#' 
+#' ## Dataset
+#' 
+#' Daily COVID-19 data is from [European Centre for Disease Prevention 
 #' and Control](https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide).
 #'
 #+ chunk_opts, include=FALSE
 knitr::opts_chunk$set(message = FALSE)
 
 
-#' Loading libraries
+#' ## Setting up data
+#' 
+#' Loading libraries.
 #+ libs
 pkg <- c("dplyr", "tidyr", "readr", "lubridate", "here", "ggplot2", "directlabels")
 invisible(lapply(pkg, library, character.only = TRUE))
@@ -26,7 +35,7 @@ covid <- covid %>%
   rename(Country = `Countries and territories`) %>% 
   rename_all(tolower)
 
-#' Days since first case in each country
+#' Resetting timeline to days since first case in each country.
 #+
 covid_by_country <- covid %>% 
   filter(cases != 0, deaths != 0) %>% 
@@ -34,8 +43,8 @@ covid_by_country <- covid %>%
   mutate(tp = interval(Sys.Date(), daterep) / ddays(1),
          tp = tp - min(tp))
 
-#' Number of cases and deaths per country.
-#' Keep only informative rows.
+#' Calculating number of cases and deaths per country.
+#' Keeping only informative rows.
 #+ cumsums
 lag_n <- 7
 covid_cum <- covid_by_country %>% 
@@ -45,7 +54,10 @@ covid_cum <- covid_by_country %>%
          risk_lag = cum_deaths / lag(cum_cases, n = lag_n, order_by = tp)) %>% 
   ungroup()
 
-#' Covid-19 cases. 
+#' ## Cases and deaths in real time
+#' 
+#' Covid-19 cases.
+#'  
 #+ plot-cases-dates
 covid_cum %>% 
   ggplot(aes(daterep, cum_cases, group = country)) +
@@ -57,6 +69,7 @@ covid_cum %>%
        caption = "Each line represents one country")
 
 #' Covid-19 deaths. 
+#' 
 #+ plot-deaths-dates
 covid_cum %>% 
   ggplot(aes(daterep, cum_deaths, group = country)) +
@@ -68,7 +81,9 @@ covid_cum %>%
        caption = "Each line represents one country")
 
 
-#' Cases on relative time scale.
+#' ## Cases and deaths on relative time scale
+#' 
+#' Number of cases per country.
 #+ plot-cases
 covid_cum %>% 
   ggplot(aes(tp, cum_cases, group = country)) +
@@ -90,7 +105,8 @@ covid_cum %>%
        y = "Cumulative number of deaths",
        caption = "Each line represents one country")
 
-#' Risk
+#' ## Risk of death
+#' 
 #+ plot-risk
 covid_cum %>% 
   ggplot(aes(tp, risk)) +
@@ -102,6 +118,8 @@ covid_cum %>%
        caption = "Each line represents one country")
 
 #' Lagged (7 days) risk.
+#' Risk of death relative to number of cases 7 days earlier.
+#' 
 #+ plot-risk-lag, warning=FALSE
 covid_cum %>% 
   ggplot(aes(tp, risk_lag)) +

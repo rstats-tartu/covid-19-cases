@@ -1,4 +1,4 @@
-name: Render and Deploy RMarkdown Website
+name: Render and Deploy Website
 on: 
   push:
     branches:
