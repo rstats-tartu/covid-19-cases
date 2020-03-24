@@ -1,11 +1,11 @@
 
 ![Render and Deploy
-Website](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20Deploy%20RMarkdown%20Website/badge.svg)
+Website](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20Deploy%20Website/badge.svg)
 
 # COVID-19 cases and deaths
 
 rstats-tartu  
-last update: 2020-03-24 07:58:10
+last update: 2020-03-24 08:10:33
 
 ## Dataset
 
