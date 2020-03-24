@@ -1,7 +1,7 @@
 Covid-19 cases
 ================
 rstats-tartu
-2020-03-23 18:21:29
+2020-03-24 07:00:39
 
 Daily covid-19 data is from [European Centre for Disease Prevention and
 Control](https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide).
@@ -10,29 +10,15 @@ Loading
 libraries
 
 ``` r
-pkg <- c("dplyr", "tidyr", "readxl", "lubridate", "here", "glue", "brms", "ggplot2", "directlabels")
+pkg <- c("dplyr", "tidyr", "readr", "lubridate", "here", "ggplot2", "directlabels")
 invisible(lapply(pkg, library, character.only = TRUE))
-```
-
-Downloading dataset
-
-``` r
-if (!dir.exists(here("data"))) {
-  system(glue("mkdir {here('data')}"))
-}
-yesterday <- Sys.Date() - 1
-dataset <- here(glue("data/COVID-19-geographic-disbtribution-worldwide-{yesterday}.xlsx"))
-if (!file.exists(dataset)) {
-  url <- glue("https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-{yesterday}.xlsx")
-  system(glue("curl -o {dataset} {url}"))
-} 
 ```
 
 Importing downloaded dataset.
 
 ``` r
-sheet_1 <- excel_sheets(dataset)[1]
-covid <- read_excel(dataset, sheet = sheet_1)
+path <- here("data/COVID-19-geographic-disbtribution-worldwide.csv")
+covid <- read_csv(path)
 covid <- covid %>% 
   rename(Country = `Countries and territories`) %>% 
   rename_all(tolower)
@@ -44,7 +30,7 @@ Days since first case in each country
 covid_by_country <- covid %>% 
   filter(cases != 0, deaths != 0) %>% 
   group_by(country) %>% 
-  mutate(tp = interval(yesterday, daterep) / ddays(1),
+  mutate(tp = interval(Sys.Date(), daterep) / ddays(1),
          tp = tp - min(tp))
 ```
 
