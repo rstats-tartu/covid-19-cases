@@ -1,13 +1,21 @@
-Covid-19 cases
-================
-rstats-tartu
-2020-03-24 07:24:41
 
-Daily covid-19 data is from [European Centre for Disease Prevention and
+![Render and Deploy
+Website](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20Deploy%20RMarkdown%20Website/badge.svg)
+
+# COVID-19 cases and deaths
+
+rstats-tartu  
+last update: 2020-03-24 07:58:10
+
+## Dataset
+
+Daily COVID-19 data is from [European Centre for Disease Prevention and
 Control](https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide).
 
+## Setting up data
+
 Loading
-libraries
+libraries.
 
 ``` r
 pkg <- c("dplyr", "tidyr", "readr", "lubridate", "here", "ggplot2", "directlabels")
@@ -24,7 +32,7 @@ covid <- covid %>%
   rename_all(tolower)
 ```
 
-Days since first case in each country
+Resetting timeline to days since first case in each country.
 
 ``` r
 covid_by_country <- covid %>% 
@@ -34,7 +42,8 @@ covid_by_country <- covid %>%
          tp = tp - min(tp))
 ```
 
-Number of cases and deaths per country. Keep only informative rows.
+Calculating number of cases and deaths per country. Keeping only
+informative rows.
 
 ``` r
 lag_n <- 7
@@ -45,6 +54,8 @@ covid_cum <- covid_by_country %>%
          risk_lag = cum_deaths / lag(cum_cases, n = lag_n, order_by = tp)) %>% 
   ungroup()
 ```
+
+## Cases and deaths in real time
 
 Covid-19 cases.
 
@@ -76,7 +87,9 @@ covid_cum %>%
 
 ![](README_files/figure-gfm/plot-deaths-dates-1.png)<!-- -->
 
-Cases on relative time scale.
+## Cases and deaths on relative time scale
+
+Number of cases per country.
 
 ``` r
 covid_cum %>% 
@@ -106,7 +119,7 @@ covid_cum %>%
 
 ![](README_files/figure-gfm/plot-deaths-1.png)<!-- -->
 
-Risk
+## Risk of death
 
 ``` r
 covid_cum %>% 
@@ -121,7 +134,8 @@ covid_cum %>%
 
 ![](README_files/figure-gfm/plot-risk-1.png)<!-- -->
 
-Lagged (7 days) risk.
+Lagged (7 days) risk. Risk of death relative to number of cases 7 days
+earlier.
 
 ``` r
 covid_cum %>% 
