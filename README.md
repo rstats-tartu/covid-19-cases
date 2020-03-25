@@ -1,54 +1,49 @@
-Covid-19 cases
-================
-rstats-tartu
-2020-03-23 17:16:25
 
-Daily covid-19 data is from [European Centre for Disease Prevention and
+![Render and Deploy
+Website](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20Deploy%20Website/badge.svg)
+
+# COVID-19 cases and deaths
+
+rstats-tartu  
+last update: 2020-03-25 09:11:56
+
+## Dataset
+
+Daily COVID-19 data is from [European Centre for Disease Prevention and
 Control](https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide).
 
+## Setting up data
+
 Loading
-libraries
+libraries.
 
 ``` r
-pkg <- c("dplyr", "tidyr", "readxl", "lubridate", "here", "glue", "brms", "ggplot2", "directlabels")
+pkg <- c("dplyr", "tidyr", "readr", "lubridate", "here", "ggplot2", "directlabels")
 invisible(lapply(pkg, library, character.only = TRUE))
-```
-
-Downloading dataset
-
-``` r
-if (!dir.exists(here("data"))) {
-  system(glue("mkdir {here('data')}"))
-}
-yesterday <- Sys.Date() - 1
-dataset <- here(glue("data/COVID-19-geographic-disbtribution-worldwide-{yesterday}.xlsx"))
-if (!file.exists(dataset)) {
-  url <- glue("https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-{yesterday}.xlsx")
-  system(glue("curl -o {dataset} {url}"))
-} 
 ```
 
 Importing downloaded dataset.
 
 ``` r
-sheet_1 <- excel_sheets(dataset)[1]
-covid <- read_excel(dataset, sheet = sheet_1)
+path <- here("data/COVID-19-geographic-disbtribution-worldwide.csv")
+covid <- read_csv(path)
 covid <- covid %>% 
   rename(Country = `Countries and territories`) %>% 
   rename_all(tolower)
 ```
 
-Days since first case in each country
+Resetting timeline to days since first case in each country.
 
 ``` r
 covid_by_country <- covid %>% 
   filter(cases != 0, deaths != 0) %>% 
   group_by(country) %>% 
-  mutate(tp = interval(yesterday, daterep) / ddays(1),
+  mutate(tp = interval(Sys.Date(), daterep) / ddays(1),
          tp = tp - min(tp))
 ```
 
-Number of cases and deaths per country. Keep only informative rows.
+Calculating number of cases and deaths per country. Keeping only
+informative rows.
 
 ``` r
 lag_n <- 7
@@ -59,6 +54,8 @@ covid_cum <- covid_by_country %>%
          risk_lag = cum_deaths / lag(cum_cases, n = lag_n, order_by = tp)) %>% 
   ungroup()
 ```
+
+## Cases and deaths in real time
 
 Covid-19 cases.
 
@@ -90,7 +87,9 @@ covid_cum %>%
 
 ![](README_files/figure-gfm/plot-deaths-dates-1.png)<!-- -->
 
-Cases on relative time scale.
+## Cases and deaths on relative time scale
+
+Number of cases per country.
 
 ``` r
 covid_cum %>% 
@@ -120,7 +119,7 @@ covid_cum %>%
 
 ![](README_files/figure-gfm/plot-deaths-1.png)<!-- -->
 
-Risk
+## Risk of death
 
 ``` r
 covid_cum %>% 
@@ -135,7 +134,8 @@ covid_cum %>%
 
 ![](README_files/figure-gfm/plot-risk-1.png)<!-- -->
 
-Lagged (7 days) risk.
+Lagged (7 days) risk. Risk of death relative to number of cases 7 days
+earlier.
 
 ``` r
 covid_cum %>% 

@@ -1,13 +1,13 @@
-name: Render and Deploy RMarkdown Website
+name: Render and Deploy Website
 on: 
   push:
     branches:
       - master
   schedule:
-    - cron:  "0 14 * * *"
+    - cron:  "0 9 * * *"
 jobs:
   build:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@master
@@ -15,6 +15,16 @@ jobs:
         run: |-
           Rscript -e "install.packages('remotes', repos = 'https://demo.rstudiopm.com/all/__linux__/bionic/latest')"
           Rscript -e "remotes::install_deps(dependencies = TRUE, repos = 'https://demo.rstudiopm.com/all/__linux__/bionic/latest')"
+      - name: Download dataset
+        run: |-
+          Rscript scripts/get_data.R
+      - name: Commit dataset
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data/COVID-19-geographic-disbtribution-worldwide.csv
+          git commit -m 'Updated dataset' || echo "No changes to commit"
+          git push https://${{github.actor}}:${{secrets.GITHUB_TOKEN}}@github.com/${{github.repository}}.git HEAD:${{ github.ref }} || echo "No changes to commit"
       - name: Render README
         run: |-
           Rscript -e "rmarkdown::render('scripts/main.R', output_format = rmarkdown::github_document(), output_file = 'README.md')"
@@ -22,11 +32,17 @@ jobs:
         run: |
           cp scripts/README.md README.md && mkdir -p README_files && cp -R scripts/README_files/* README_files/
           rm -rf scripts/README*
-      - name: Commit results
+      - name: Commit README
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
           git add README.md README_files/
           git commit -m 'Re-build README.Rmd' || echo "No changes to commit"
+          git push https://${{github.actor}}:${{secrets.GITHUB_TOKEN}}@github.com/${{github.repository}}.git HEAD:${{ github.ref }} || echo "No changes to commit"
+      - name: Render index
+        run: |-
+          Rscript -e "rmarkdown::render('pilt_ym.Rmd', output_format = bookdown::html_document2(), output_file = 'index.html')"
+      - name: Commit index
+        run: |
+          git add index.html
+          git commit -m 'Re-build index.html' || echo "No changes to commit"
           git push https://${{github.actor}}:${{secrets.GITHUB_TOKEN}}@github.com/${{github.repository}}.git HEAD:${{ github.ref }} || echo "No changes to commit"
     container: rocker/verse:latest
