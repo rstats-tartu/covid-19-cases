@@ -4,7 +4,7 @@ author: rstats-tartu
 date: "`r Sys.Date()`"
 ---
 
-<<<<<<< HEAD
+
 ```{r}
 library("tidyverse")
 library("lubridate")
@@ -13,14 +13,15 @@ library("here")
 library("glue")
 library("directlabels")
 library("jcolors")
+```
 
-=======
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 ```
 
 
 ```{r pkgs}
+library("readxl")
 library("dplyr")
 library("readr")
 library("directlabels")
@@ -30,8 +31,9 @@ library("ggplot2")
 library("ggthemes")
 library("zoo")
 library("here")
+library("glue")
 old <- theme_set(ggthemes::theme_tufte())
->>>>>>> 2587ace2e597cf9206e82223a70c9422ac5f635c
+
 ```
 
 
@@ -100,16 +102,11 @@ covid_cum2 <- covid_by_country2 %>%
 ## Uute nakatumiste arv
 
 ```{r}
-<<<<<<< HEAD
+
 ggplot(cov %>% filter(daterep> "2020-03-01"), aes(daterep, cases, fill=region))+
   geom_col()+
   ggthemes::theme_tufte()+
   #theme(legend.position = "none")+
-=======
-ggplot(covid %>% filter(daterep> "2020-03-01"), aes(daterep, cases, fill=geoid))+
-  geom_col()+
-  theme(legend.position = "none")+
->>>>>>> 2587ace2e597cf9206e82223a70c9422ac5f635c
   xlab(NULL)
 ```
 
@@ -225,7 +222,7 @@ covid_cum2 %>%
   theme(legend.position = "none")
 ```
 
-<<<<<<< HEAD
+
 alla 5 kumulatiivse surma on pildilt eemaldatud, et jooni paremini kohakuti saada.
 
 ## Kumulatiivne haigestumine: haigeid ja surnuid 100 000 kohta
@@ -249,11 +246,11 @@ ggplot(cov %>% filter(daterep> "2020-03-01"),
   theme(legend.position = "none")+
   xlab(NULL)
 ```
-=======
+
 Alla 20 kumulatiivse surma on pildilt eemaldatud, et jooni paremini kohakuti saada.
 
 ## Suremine tormab testimisest mööda
->>>>>>> 2587ace2e597cf9206e82223a70c9422ac5f635c
+
 
 ```{r}
 ggplot(cov1 %>% filter(daterep> "2020-03-05"), aes(daterep, risk, color=country))+
@@ -278,8 +275,7 @@ ggplot(cov1 %>% filter(daterep> "2020-03-18"), aes(daterep, risk_7, color=countr
   theme(legend.position = "none")
 ```
 
-<<<<<<< HEAD
-=======
+
 ### Riskihinnangute konvergents 7-päevase nihkega andmete peal
 
 ```{r warning=FALSE}
@@ -292,7 +288,7 @@ covid_cum1 %>%
        y = "Risk of death")+
    theme(legend.position = "none")
 ```
->>>>>>> 2587ace2e597cf9206e82223a70c9422ac5f635c
+
 
 
 # Eesti võrdluses lähinaabritega
@@ -367,9 +363,7 @@ ggplot(cov %>% filter(daterep> "2020-03-05",
 ```
 
 # 3. Eesti
-=======
-# Eesti
->>>>>>> 2587ace2e597cf9206e82223a70c9422ac5f635c
+
 
 ## Uute nakatumiste arv Eestis
 
