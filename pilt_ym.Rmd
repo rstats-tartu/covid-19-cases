@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 
 ```{r pkgs}
 library("dplyr")
+library("tidyr")
 library("readr")
 library("directlabels")
 library("jcolors")
