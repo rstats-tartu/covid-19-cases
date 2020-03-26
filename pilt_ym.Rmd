@@ -65,6 +65,7 @@ df1 <- read_csv("data/country_data.csv")
 cov <- cov %>% left_join(df1)
 cov <- cov %>% mutate(cases_per_100000= (cumulative_cases/population)*100000, 
                       deaths_per_100000= (cumulative_deaths/population)*100000)
+cov <- cov %>% drop_na(region)
 
 cov1 <- cov %>% group_by(country) %>% filter(max(cumulative_cases)>10000)
 
