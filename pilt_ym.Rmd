@@ -3,6 +3,9 @@ title: "Covid-19 pandeemia"
 author: rstats-tartu
 date: "`r Sys.Date()`"
 ---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
 
 
 ```{r}
@@ -15,9 +18,6 @@ library("directlabels")
 library("jcolors")
 ```
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
-```
 
 
 ```{r pkgs}
@@ -60,12 +60,33 @@ cov <- covid %>% arrange(geoid, daterep) %>%
          lag_cases_7 = dplyr::lag(cumulative_cases, n=7),
          risk_7=cumulative_deaths/lag_cases_7,
          smoothed_cases = zoo::rollmean(cases, k=3, fill=NA),
-         smoothed_deaths =zoo::rollmean(deaths, k=3, fill=NA))
-df1 <- read_csv("data/country_data.csv")
+         smoothed_deaths =zoo::rollmean(deaths, k=3, fill=NA)
+         ) 
+cov$country[cov$country == "United_States_of_America"] <- "US"
+
+
+
+df1 <- read_csv("data/country_data.csv") %>% 
+  unique() %>% 
+  filter(country != "Diamond Princess")
+df1$country[df1$country == "United Arab Emirates"] <- "United_Arab_Emirates"
+df1$country[df1$country == "United Kingdom"] <- "United_Kingdom"
+df1$country[df1$country == "Taiwan*"] <- "Taiwan"
+df1$country[df1$country == "South Africa"] <- "South_Africa"
+df1$country[df1$country == "Sri Lanka"] <- "Sri_Lanka"
+df1$country[df1$country == "Saudi Arabia"] <- "Saudi_Arabia"
+df1$country[df1$country == "San Marino"] <- "San_Marino"
+df1$country[df1$country == "North Macedonia"] <- "North_Macedonia"
+df1$country[df1$country == "New Zealand"] <- "New_Zealand"
+df1$country[df1$country == "Korea, South"] <- "South_Korea"
+df1$country[df1$country == "Dominican Republic"] <- "Dominican_Republic"
+df1$country[df1$country == "Bosnia and Herzegovina"] <- "Bosnia_and_Herzegovina"
+
 cov <- cov %>% left_join(df1)
 cov <- cov %>% mutate(cases_per_100000= (cumulative_cases/population)*100000, 
                       deaths_per_100000= (cumulative_deaths/population)*100000)
-cov <- cov %>% drop_na(region)
+#cov <- cov %>% drop_na(region)
+#cov <- unique(cov)
 
 cov1 <- cov %>% group_by(country) %>% filter(max(cumulative_cases)>10000)
 
@@ -214,7 +235,11 @@ alla 5 kumulatiivse surma on pildilt eemaldatud, et jooni paremini kohakuti saad
 ## Kumulatiivne haigestumine: haigeid ja surnuid 100 000 kohta
 
 ```{r}
-ggplot(cov %>% filter(daterep> "2020-03-01"), 
+ggplot(cov %>% filter(daterep> "2020-03-01", 
+                      geoid != "SM", 
+                      geoid != "AD", 
+                      geoid != "LU", 
+                      geoid != "LI"), 
        aes(daterep, cases_per_100000, group=country, color=region))+
   geom_line()+
   geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
@@ -224,7 +249,11 @@ ggplot(cov %>% filter(daterep> "2020-03-01"),
 ```
 
 ```{r}
-ggplot(cov %>% filter(daterep> "2020-03-01"), 
+ggplot(cov %>% filter(daterep> "2020-03-01",
+                       geoid != "SM", 
+                      geoid != "AD", 
+                      geoid != "LU", 
+                      geoid != "LI"), 
        aes(daterep, deaths_per_100000, group=country, color=region))+
   geom_line()+
   geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
