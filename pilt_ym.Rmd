@@ -142,7 +142,7 @@ ggplot(cov %>% filter(daterep> "2020-03-01"), aes(daterep, deaths, fill=region))
 ## Uued nakatumised ja uued surmad log-skaalas
 
 ```{r}
-ggplot(covid %>% filter(daterep > "2020-03-01"), 
+ggplot(cov %>% filter(daterep > "2020-03-01"), 
        aes(daterep, cases))+
   geom_col(fill="grey")+
   geom_col(aes(y=deaths), fill="black")+
