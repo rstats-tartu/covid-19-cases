@@ -280,7 +280,7 @@ covid_cum1 %>%
 
 
 
-# Eesti võrdluses lähinaabritega
+# Eesti võrdluses lähinaabritega (ja Gruusiaga)
 
 ## Kumulatiivne nakatunute arv riigiti
 
@@ -291,7 +291,9 @@ ggplot(cov %>% filter(daterep> "2020-03-05",
                                      "Latvia", 
                                      "Russia", 
                                      "Lithuania",
-                                     "Sweden")), 
+                                     "Sweden",
+                                     "Georgia",
+                                     "Norway")), 
        aes(daterep, cumulative_cases, color=country))+
   geom_line()+
   geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
@@ -307,9 +309,12 @@ ggplot(cov %>% filter(daterep> "2020-03-05",
                                      "Latvia", 
                                      "Russia", 
                                      "Lithuania",
-                                     "Sweden")), 
+                                     "Sweden",
+                                     "Georgia",
+                                     "Norway")), 
        aes(daterep, cumulative_deaths, color=country))+
   geom_line()+
+  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
   theme(legend.position = "none", axis.title.x = element_blank())
 ```
 
@@ -321,7 +326,9 @@ ggplot(cov %>% filter(daterep> "2020-03-05",
                                      "Latvia", 
                                      "Russia", 
                                      "Lithuania",
-                                     "Sweden")), 
+                                     "Sweden",
+                                     "Georgia",
+                                     "Norway")), 
        aes(daterep, cases_per_100000, color=country))+
   geom_line()+
   geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
@@ -337,7 +344,9 @@ ggplot(cov %>% filter(daterep> "2020-03-05",
                                      "Latvia", 
                                      "Russia", 
                                      "Lithuania",
-                                     "Sweden")), 
+                                     "Sweden",
+                                     "Georgia",
+                                     "Norway")), 
        aes(daterep, deaths_per_100000, color=country))+
   geom_line()+
   geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
