@@ -10,25 +10,15 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 
 
 ```{r}
-library("tidyverse")
-library("lubridate")
-library("readxl")
-library("directlabels")
-library("jcolors")
-library(janitor)
-library(socviz)
-library(ggrepel)
-library(paletteer)
-library(showtext)
-showtext_auto()
-
 library("dplyr")
+library("ggplot2")
 library("tidyr")
 library("readr")
 library("directlabels")
 library("jcolors")
 library("ggthemes")
 library("zoo")
+library("lubridate")
 library("here")
 library("glue")
 old <- theme_set(ggthemes::theme_tufte())
@@ -44,8 +34,6 @@ old <- theme_set(ggthemes::theme_tufte())
 path <- here("data/COVID-19-geographic-disbtribution-worldwide.csv")
 covid <- read_csv(path)
 covid <- covid %>% 
-  rename(Country = `Countries and territories`) %>% 
-  rename_all(tolower) %>% 
   mutate(date = paste(year, month, day, sep = "-"))
 
 cov <- covid %>% arrange(geoid, daterep) %>% 
@@ -64,28 +52,15 @@ cov$country[cov$country == "United_States_of_America"] <- "US"
 ```{r}
 df1 <- read_csv("data/country_data.csv") %>% 
   unique() %>% 
-  filter(country != "Diamond Princess")
-df1$country[df1$country == "United Arab Emirates"] <- "United_Arab_Emirates"
-df1$country[df1$country == "United Kingdom"] <- "United_Kingdom"
-df1$country[df1$country == "Taiwan*"] <- "Taiwan"
-df1$country[df1$country == "South Africa"] <- "South_Africa"
-df1$country[df1$country == "Sri Lanka"] <- "Sri_Lanka"
-df1$country[df1$country == "Saudi Arabia"] <- "Saudi_Arabia"
-df1$country[df1$country == "San Marino"] <- "San_Marino"
-df1$country[df1$country == "North Macedonia"] <- "North_Macedonia"
-df1$country[df1$country == "New Zealand"] <- "New_Zealand"
-df1$country[df1$country == "Korea, South"] <- "South_Korea"
-df1$country[df1$country == "Dominican Republic"] <- "Dominican_Republic"
-df1$country[df1$country == "Bosnia and Herzegovina"] <- "Bosnia_and_Herzegovina"
+  filter(country != "Diamond Princess") %>% 
+  mutate_at("country", ~gsub("[ ,]+", "_", .x)) %>% 
+  mutate_at("country", ~gsub("\\*$", "", .x))
 ```
 
 ```{r eval=FALSE}
 cov <- cov %>% left_join(df1)
 cov <- cov %>% mutate(cases_per_100000= (cumulative_cases/population)*100000, 
                       deaths_per_100000= (cumulative_deaths/population)*100000)
-#cov <- cov %>% drop_na(region)
-#cov <- unique(cov)
-
 cov1 <- cov %>% group_by(country) %>% filter(max(cumulative_cases)>10000)
 
 #taavi kood:
