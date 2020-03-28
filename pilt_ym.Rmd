@@ -13,22 +13,20 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 library("tidyverse")
 library("lubridate")
 library("readxl")
-library("here")
-library("glue")
 library("directlabels")
 library("jcolors")
-```
+library(janitor)
+library(socviz)
+library(ggrepel)
+library(paletteer)
+library(showtext)
+showtext_auto()
 
-
-
-```{r pkgs}
 library("dplyr")
 library("tidyr")
 library("readr")
 library("directlabels")
 library("jcolors")
-library("lubridate")
-library("ggplot2")
 library("ggthemes")
 library("zoo")
 library("here")
@@ -38,7 +36,7 @@ old <- theme_set(ggthemes::theme_tufte())
 ```
 
 
-```{r}
+```{r eval=FALSE}
 #taavi kood
 
 #' Importing downloaded dataset.
@@ -50,9 +48,6 @@ covid <- covid %>%
   rename_all(tolower) %>% 
   mutate(date = paste(year, month, day, sep = "-"))
 
-```
-
-```{r}
 cov <- covid %>% arrange(geoid, daterep) %>% 
   group_by(geoid) %>% 
   mutate(cumulative_cases= cumsum(cases), 
@@ -64,9 +59,9 @@ cov <- covid %>% arrange(geoid, daterep) %>%
          smoothed_deaths =zoo::rollmean(deaths, k=3, fill=NA)
          ) 
 cov$country[cov$country == "United_States_of_America"] <- "US"
+```
 
-
-
+```{r}
 df1 <- read_csv("data/country_data.csv") %>% 
   unique() %>% 
   filter(country != "Diamond Princess")
@@ -82,7 +77,9 @@ df1$country[df1$country == "New Zealand"] <- "New_Zealand"
 df1$country[df1$country == "Korea, South"] <- "South_Korea"
 df1$country[df1$country == "Dominican Republic"] <- "Dominican_Republic"
 df1$country[df1$country == "Bosnia and Herzegovina"] <- "Bosnia_and_Herzegovina"
+```
 
+```{r eval=FALSE}
 cov <- cov %>% left_join(df1)
 cov <- cov %>% mutate(cases_per_100000= (cumulative_cases/population)*100000, 
                       deaths_per_100000= (cumulative_deaths/population)*100000)
@@ -120,72 +117,341 @@ covid_cum2 <- covid_by_country2 %>%
 ```
 
 
+```{r}
+theme_covid <- function() { 
+    theme_classic() +
+    theme(plot.title = element_text(size = rel(2), face = "bold"),
+          plot.subtitle = element_text(size = rel(1.5)),
+          plot.caption = element_text(size = rel(0.9)),
+          axis.text.y = element_text(size = rel(2)),
+          axis.title.x = element_text(size = rel(1.5)),
+          axis.title.y = element_text(size = rel(1.5)),
+          axis.text.x = element_text(size = rel(2)),
+          legend.text = element_text(size = rel(2))
+          )
+}
+
+theme_set(theme_covid())
+col_pal <- c("#E69F00", "#0072B2", "#000000", "#56B4E9", 
+             "#009E73", "#F0E442", "#D55E00", "#CC79A7")
+```
+
+```{r}
+get_ecdc_csv <- function(url = "https://opendata.ecdc.europa.eu/covid19/casedistribution/csv",
+                          date = lubridate::today(), 
+                          writedate = lubridate::today(), 
+                          fname = "ecdc-cumulative-",
+                          ext = "csv", 
+                          dest = "data") {
+  
+  target <- url
+  message("target: ", target)
+
+  destination <- fs::path(here::here("data"), paste0(fname, writedate), ext = ext)
+  message("saving to: ", destination)
+  
+  tf <- tempfile(fileext = ext)
+  curl::curl_download(target, tf)
+  fs::file_copy(tf, destination)
+  
+  janitor::clean_names(readr::read_csv(tf))
+}                          
+
+
+
+## A useful function from Edward Visel, which does a thing
+## with tibbles that in the past I've done variable-by-variable
+## using match(), like an animal. The hardest part was 
+## figuring out that this operation is called a coalescing join  
+## https://alistaire.rbind.io/blog/coalescing-joins/
+coalesce_join <- function(x, y, 
+                          by = NULL, suffix = c(".x", ".y"), 
+                          join = dplyr::full_join, ...) {
+    joined <- join(x, y, by = by, suffix = suffix, ...)
+    # names of desired output
+    cols <- dplyr::union(names(x), names(y))
+    
+    to_coalesce <- names(joined)[!names(joined) %in% cols]
+    suffix_used <- suffix[ifelse(endsWith(to_coalesce, suffix[1]), 1, 2)]
+    # remove suffixes and deduplicate
+    to_coalesce <- unique(substr(
+        to_coalesce, 
+        1, 
+        nchar(to_coalesce) - nchar(suffix_used)
+    ))
+    
+    coalesced <- purrr::map_dfc(to_coalesce, ~dplyr::coalesce(
+        joined[[paste0(.x, suffix[1])]], 
+        joined[[paste0(.x, suffix[2])]]
+    ))
+    names(coalesced) <- to_coalesce
+    
+    dplyr::bind_cols(joined, coalesced)[cols]
+}
+
+## Country codes. The ECDC does not quite use standard codes for countries
+## These are the iso2 and iso3 codes, plus some convenient groupings for
+## possible use later
+iso3_countrys <- read_csv("data/countries_iso3.csv")
+iso2_to_iso3 <- read_csv("data/iso2_to_iso3.csv")
+
+country_table <- left_join(iso3_countrys, iso2_to_iso3)
+
+eu <- c("AUT", "BEL", "BGR", "HRV", "CYP", "CZE", "DNK", "EST", "FIN", "FRA",
+        "DEU", "GRC", "HUN", "IRL", "ITA", "LVA", "LTU", "LUX", "MLT", "NLD",
+        "POL", "PRT", "ROU", "SVK", "SVN", "ESP", "SWE", "GBR")
+
+europe <- c("ALB", "AND", "AUT", "BLR", "BEL", "BIH", "BGR", "HRV", "CYP", "CZE",
+        "DNK", "EST", "FRO", "FIN", "FRA", "DEU", "GIB", "GRC", "HUN", "ISL",
+        "IRL", "ITA", "LVA", "LIE", "LTU", "LUX", "MKD", "MLT", "MDA", "MCO",
+        "NLD", "NOR", "POL", "PRT", "ROU", "RUS", "SMR", "SRB", "SVK", "SVN",
+        "ESP", "SWE", "CHE", "UKR", "GBR", "VAT", "RSB", "IMN", "MNE")
+
+north_america <- c("AIA", "ATG", "ABW", "BHS", "BRB", "BLZ", "BMU", "VGB", "CAN", "CYM",
+        "CRI", "CUB", "CUW", "DMA", "DOM", "SLV", "GRL", "GRD", "GLP", "GTM",
+        "HTI", "HND", "JAM", "MTQ", "MEX", "SPM", "MSR", "ANT", "KNA", "NIC",
+        "PAN", "PRI", "KNA", "LCA", "SPM", "VCT", "TTO", "TCA", "VIR", "USA",
+        "SXM")
+
+south_america <- c("ARG", "BOL", "BRA", "CHL", "COL", "ECU", "FLK", "GUF", "GUY", "PRY",
+                   "PER", "SUR", "URY", "VEN")
+
+
+africa <- c("DZA", "AGO", "SHN", "BEN", "BWA", "BFA", "BDI", "CMR", "CPV", "CAF",
+        "TCD", "COM", "COG", "DJI", "EGY", "GNQ", "ERI", "ETH", "GAB", "GMB",
+        "GHA", "GNB", "GIN", "CIV", "KEN", "LSO", "LBR", "LBY", "MDG", "MWI",
+        "MLI", "MRT", "MUS", "MYT", "MAR", "MOZ", "NAM", "NER", "NGA", "STP",
+        "REU", "RWA", "STP", "SEN", "SYC", "SLE", "SOM", "ZAF", "SHN", "SDN",
+        "SWZ", "TZA", "TGO", "TUN", "UGA", "COD", "ZMB", "TZA", "ZWE", "SSD",
+        "COD")
+
+asia <- c("AFG", "ARM", "AZE", "BHR", "BGD", "BTN", "BRN", "KHM", "CHN", "CXR",
+        "CCK", "IOT", "GEO", "HKG", "IND", "IDN", "IRN", "IRQ", "ISR", "JPN",
+        "JOR", "KAZ", "PRK", "KOR", "KWT", "KGZ", "LAO", "LBN", "MAC", "MYS",
+        "MDV", "MNG", "MMR", "NPL", "OMN", "PAK", "PHL", "QAT", "SAU", "SGP",
+        "LKA", "SYR", "TWN", "TJK", "THA", "TUR", "TKM", "ARE", "UZB", "VNM",
+        "YEM", "PSE")
+
+oceania <- c("ASM", "AUS", "NZL", "COK", "FJI", "PYF", "GUM", "KIR", "MNP", "MHL",
+        "FSM", "UMI", "NRU", "NCL", "NZL", "NIU", "NFK", "PLW", "PNG", "MNP",
+        "SLB", "TKL", "TON", "TUV", "VUT", "UMI", "WLF", "WSM", "TLS")
+covid_raw <- get_ecdc_csv()
+
+
+## on 3/27/20 they changed the contents of the file too, including the date format
+covidx <- covid_raw %>%
+  mutate(date = lubridate::dmy(date_rep),
+         iso2 = geo_id)
+
+## merge in the iso country names
+covidx <- left_join(covidx, country_table)
+
+## A small crosswalk file that we'll coalesce into the missing values
+## We need to specify the na explicity because the xwalk file has Namibia
+## as a country -- i.e. country code = string literal "NA"
+country_xwalk <- read_csv("data/ecdc_to_iso2_xwalk.csv",
+                        na = "")
+
+covidx <- coalesce_join(covidx, country_xwalk, 
+                       by = "geo_id", join = dplyr::left_join)
+cov_case_curve <- covidx %>%
+  select(date, cname, iso3, cases, deaths) %>%
+  drop_na(iso3) %>%
+  group_by(iso3) %>%
+  arrange(date) %>%
+  mutate(cu_cases = cumsum(cases), 
+         cu_deaths = cumsum(deaths)) %>%
+  filter(cu_cases > 99) %>%
+  mutate(days_elapsed = date - min(date),
+          end_label = ifelse(date == max(date), cname, NA))
+
+cov_case_curve <- cov_case_curve %>% rename(country= cname)
+cov_case_curve$country[cov_case_curve$country == "Korea, Republic of"] <- "South_Korea"
+cov_case_curve$country[cov_case_curve$country == "Iran, Islamic Republic of"] <- "Iran"
+cov_case_curve$country[cov_case_curve$country == "Czech Republic"] <- "Czechia"
+cov_case_curve$country[cov_case_curve$country == "United States"] <- "US"
+cov_case_curve$country[cov_case_curve$country == "United Kingdom"] <- "United_Kingdom"
+cov_case_curve$country[cov_case_curve$country == "Russian Federation"] <- "Russia"
+cov_case_curve$country[cov_case_curve$country == "United Arab Emirates"] <- "United_Arab_Emirates"
+cov_case_curve$country[cov_case_curve$country == "South Africa"] <- "South_Africa"
+cov_case_curve$country[cov_case_curve$country == "Saudi Arabia"] <- "Saudi_Arabia"
+cov_case_curve$country[cov_case_curve$country == "Taiwan, Province of China"] <- "Taiwan"
+cov_case_curve$country[cov_case_curve$country == "Costa Rica"] <- "Costa_Rica"
+cov_case_curve$country[cov_case_curve$country == "Dominican Republic"] <- "Dominican_Republic"
+cov_case_curve$country[cov_case_curve$country == "Bosnia and Herzegovina"] <- "Bosnia_and_Herzegovina"
+cov_case_curve$country[cov_case_curve$country == "New Zealand"] <- "New_Zealand"
+cov_case_curve$country[cov_case_curve$country == "Macedonia, the former Yugoslav Republic of"] <- "North_Macedonia"
+cov_case_curve$country[cov_case_curve$country == "Viet Nam"] <- "Vietnam"
+cov_case_curve$country[cov_case_curve$country == "Moldova, Republic of"] <- "Moldova"
+cov_case_curve$country[cov_case_curve$country == "Brunei Darussalam"] <- "Brunei"
+cov_case_curve$country[cov_case_curve$country == "Sri Lanka"] <- "Sri_Lanka"
+cov_case_curve$country[cov_case_curve$country == "Venezuela, Bolivarian Republic of"] <- "Venezuela"
+
+cov_case_curve <- cov_case_curve %>% left_join(df1)
+cov_case_curve <- cov_case_curve %>% 
+  mutate(cases_per_100000= (cu_cases/population)*100000,  
+         deaths_per_100000= (cu_deaths/population)*100000,
+         risk=cu_deaths/cu_cases,
+         lag_cases_7 = dplyr::lag(cu_cases, n=7),
+         risk_7=cu_deaths/lag_cases_7,
+         smoothed_cases = zoo::rollmean(cases, k=3, fill=NA),
+         smoothed_deaths =zoo::rollmean(deaths, k=3, fill=NA))
+
+cov_curve <- covidx %>%
+  select(date, cname, iso3, cases, deaths) %>%
+  drop_na(iso3) %>%
+  group_by(iso3) %>%
+  arrange(date) %>%
+  mutate(cu_cases = cumsum(cases), 
+         cu_deaths = cumsum(deaths)) %>%
+  filter(cu_deaths > 9) %>%
+  mutate(days_elapsed = date - min(date),
+          end_label = ifelse(date == max(date), cname, NA))
+```
+
+
+
 # Globaalne
 
 ## Uute nakatumiste arv
 
 ```{r}
 
-ggplot(cov %>% filter(daterep> "2020-03-01"), aes(daterep, cases, fill=region))+
+ggplot(cov_case_curve %>% filter(date> "2020-03-01"), aes(date, cases, fill=region))+
   geom_col()+
+  ggthemes::theme_tufte()+
   theme(axis.title.x = element_blank())
+  
 ```
 
 ## Uute surmade arv 
 
 ```{r}
-ggplot(cov %>% filter(daterep> "2020-03-01"), aes(daterep, deaths, fill=region))+
+ggplot(cov_case_curve %>% filter(date> "2020-03-01"), aes(date, deaths, fill=region))+
   geom_col()+
+  ggthemes::theme_tufte()+
   theme(axis.title.x = element_blank())
 ```
 
-## Uued nakatumised ja uued surmad log-skaalas
-
-```{r}
-ggplot(cov %>% filter(daterep > "2020-03-01"), 
-       aes(daterep, cases))+
-  geom_col(fill="grey")+
-  geom_col(aes(y=deaths), fill="black")+
-  theme(legend.position = "none", axis.title = element_blank()) +
-  scale_y_log10(breaks=NULL)
-```
 
 ## Uued nakatumised, silutud liikuva keskmisega (k=3)
 
 ```{r}
-ggplot(cov %>% filter(daterep> "2020-03-01"), 
-       aes(daterep, smoothed_cases, group=country, color=region))+
+ggplot(cov_case_curve %>% filter(date> "2020-03-01"), 
+       aes(date, smoothed_cases, group=country, color=region))+
   geom_line()+
-  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
+  geom_dl(aes(label = iso3), method = list(dl.combine("last.points"), cex = 0.8))+
   theme(legend.position = "none", axis.title.x = element_blank())
 ```
 
 ## Uued surmad, silutud liikuva keskmisega (k=3)
 
 ```{r}
-ggplot(cov %>% filter(daterep> "2020-03-01"), aes(daterep, smoothed_deaths,  group=country, color=region))+
+ggplot(cov_case_curve %>% filter(date> "2020-03-01"), 
+       aes(date, smoothed_deaths, group=country, color=region))+
   geom_line()+
-  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
+  geom_dl(aes(label = iso3), method = list(dl.combine("last.points"), cex = 0.8))+
   theme(legend.position = "none", axis.title.x = element_blank())
 ```
 
 ## Kumulatiivne nakatunute arv riigiti
 
+```{r like-jbm, layout="l-body-outset", message=FALSE, warning=FALSE, fig.width=10, fig.height=12}
+## Replicate JB Murdoch's small multiple, only don't alphabetize countries. 
+## https://www.ft.com/coronavirus-latest
+
+## Top 50 countries by >> 100 cases, let's say. 
+top_50 <- cov_case_curve %>%
+  group_by(country) %>%
+  filter(cu_cases == max(cu_cases)) %>%
+  ungroup() %>%
+#  top_n(50, cu_cases) %>%
+  select(iso3, country, cu_cases) %>%
+  mutate(days_elapsed = 1, 
+             cu_cases = max(cov_case_curve$cu_cases) - 1e4,
+          country = recode(country, `United States` = "USA",
+                        `Iran, Islamic Republic of` = "Iran", 
+                        `Korea, Republic of` = "South Korea", 
+                        `United Kingdom` = "UK")) 
+
+
+cov_case_curve_bg <- cov_case_curve %>% 
+  select(-country) 
+
+cov_case_curve_endpoints <- cov_case_curve %>% 
+#  filter(iso3 %in% top_50$iso3) %>%
+  mutate(country = recode(country, `United States` = "USA",
+                        `Iran, Islamic Republic of` = "Iran", 
+                        `Korea, Republic of` = "South Korea", 
+                        `United Kingdom` = "UK")) %>%
+  group_by(iso3) %>%
+  filter(cu_cases == max(cu_cases)) %>%
+  select(country, iso3, days_elapsed, cu_cases) %>%
+  ungroup()
+
+
+cov_case_curve  %>%
+#  filter(iso3 %in% top_50$iso3) %>%
+  mutate(country = recode(country, `United States` = "USA",
+                        `Iran, Islamic Republic of` = "Iran", 
+                        `Korea, Republic of` = "South Korea", 
+                        `United Kingdom` = "UK")) %>%
+  ggplot(mapping = aes(x = days_elapsed, y = cu_cases)) + 
+  geom_line(data = cov_case_curve_bg, 
+            aes(group = iso3),
+            size = 0.15, color = "gray80") + 
+  geom_line(color = "firebrick",
+            lineend = "round") + 
+  geom_point(data = cov_case_curve_endpoints, 
+             size = 1.1, 
+             shape = 21, 
+             color = "firebrick",
+             fill = "firebrick2"
+             ) + 
+  geom_text(data = top_50, 
+             mapping = aes(label = country), 
+             vjust = "inward", 
+             hjust = "inward",
+             fontface = "bold", 
+             color = "firebrick", 
+             size = 3) + 
+  scale_y_log10() + 
+  facet_wrap(~ country, ncol = 5) + 
+  labs(x = "Days Since 100th Confirmed Case", 
+       y = "Cumulative Number of Cases (log10 scale)", 
+       title = "Cumulative Number of Reported Cases of COVID-19: Top 50 Countries", 
+       subtitle = paste("Data as of", format(max(cov_curve$date), "%A, %B %e, %Y")), 
+        caption = "Kieran Healy @kjhealy / Data: https://www.ecdc.europa.eu/") + 
+  theme(plot.title = element_text(size = rel(1), face = "bold"),
+          plot.subtitle = element_text(size = rel(0.7)),
+          plot.caption = element_text(size = rel(1)),
+          strip.text = element_blank(),
+          panel.spacing.x = unit(-0.05, "lines"),
+          panel.spacing.y = unit(0.3, "lines"),
+          axis.text.y = element_text(size = rel(0.5)),
+          axis.title.x = element_text(size = rel(1)),
+          axis.title.y = element_text(size = rel(1)),
+          axis.text.x = element_text(size = rel(0.5)),
+          legend.text = element_text(size = rel(1)))
+
+```
+
+
 ```{r}
-ggplot(cov %>% filter(daterep> "2020-03-01"), 
-       aes(daterep, cumulative_cases, group=country, color=region))+
+ggplot(cov_case_curve %>% filter(date> "2020-03-01"), 
+       aes(date, cu_cases, group=country, color=region))+
   geom_line()+
-  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
+  geom_dl(aes(label = iso3), method = list(dl.combine("last.points"), cex = 0.8))+
   theme(legend.position = "none", axis.title.x = element_blank())
 ```
 
 ## Riikide epideemiad on alguspunkti järgi joondatud
 
 ```{r}
-covid_cum1 %>% 
-  ggplot(aes(tp, cum_cases, color = country)) +
+cov_case_curve %>% group_by(country) %>% filter(max(cu_cases)>1000) %>% 
+  ggplot(aes(days_elapsed, cu_cases, color = country)) +
   geom_line() +
-  geom_dl(aes(label = geoid), method = list("last.points", cex = 0.8)) +
+  geom_dl(aes(label = iso3), method = list("last.points", cex = 0.8)) +
   scale_y_log10() +
   labs(x = "Days since first case in each country", 
        y = "Cumulative number of cases")+
@@ -200,15 +466,30 @@ Alla 100 kumulatiivse haigusjuhu on eemaldatud, et jooni paremini kohakuti saada
 ## Kumulatiivsed surmad: suurimad nakkuskolded
 
 ```{r}
-ggplot(cov1 %>% filter(daterep> "2020-03-01"), aes(daterep, cumulative_deaths, color=country))+
+ggplot(cov_case_curve %>% filter(date> "2020-03-01"), aes(date, cu_deaths, group=country, color=region))+
   geom_line()+
   xlab(NULL)+
   scale_color_jcolors(palette = "rainbow")+
-  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
+  geom_dl(aes(label = iso3), method = list(dl.combine("last.points"), cex = 0.8))+
   theme(legend.position = "none")
 ```
 
 ```{r}
+cov_case_curve %>% filter(max(cu_deaths)>100) %>% 
+  ggplot(aes(days_elapsed, cu_deaths, group= country, color = region)) +
+  geom_line() +
+  geom_dl(aes(label = iso3), method = list("last.points", cex = 0.8)) +
+  scale_y_log10() +
+  labs(x = "Days since first case in each country", 
+       y = "Cumulative deaths")+
+  theme(legend.position = "none", axis.title.x = element_blank()) +
+  xlim(0, 40)
+```
+
+
+
+
+```{r eval=FALSE}
 #taavi kood
 covid_cum2 %>% 
   ggplot(aes(tp, cum_deaths)) +
@@ -226,26 +507,24 @@ alla 5 kumulatiivse surma on pildilt eemaldatud, et jooni paremini kohakuti saad
 ## Kumulatiivne haigestumine: haigeid ja surnuid 100 000 kohta
 
 ```{r}
-ggplot(cov %>% filter(daterep> "2020-03-01", 
-                      geoid != "SM", 
-                      geoid != "AD", 
-                      geoid != "LU", 
-                      geoid != "LI"), 
-       aes(daterep, cases_per_100000, group=country, color=region))+
+ggplot(cov_case_curve %>% filter(date> "2020-03-01", 
+                                 iso3 !="AND",
+                                 iso3 !="LUX"
+                                
+                      ), 
+       aes(date, cases_per_100000, group=country, color=region))+
   geom_line()+
-  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
+  geom_dl(aes(label = iso3), method = list(dl.combine("last.points"), cex = 0.8))+
   theme(legend.position = "none", axis.title.x = element_blank())
 ```
 
 ```{r}
-ggplot(cov %>% filter(daterep> "2020-03-01",
-                       geoid != "SM", 
-                      geoid != "AD", 
-                      geoid != "LU", 
-                      geoid != "LI"), 
-       aes(daterep, deaths_per_100000, group=country, color=region))+
+ggplot(cov_case_curve %>% filter(date> "2020-03-01",
+                       iso3 != "AND", 
+                      iso3 != "LUX"), 
+       aes(date, deaths_per_100000, group=country, color=region))+
   geom_line()+
-  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
+  geom_dl(aes(label = iso3), method = list(dl.combine("last.points"), cex = 0.8))+
   theme(legend.position = "none", axis.title.x = element_blank())
 ```
 
@@ -255,11 +534,22 @@ Alla 20 kumulatiivse surma on pildilt eemaldatud, et jooni paremini kohakuti saa
 
 
 ```{r}
-ggplot(cov1 %>% filter(daterep> "2020-03-05"), aes(daterep, risk, color=country))+
+ggplot(cov_case_curve %>% filter(date> "2020-03-05",
+                                 country == "China"|
+                                 country == "US"|
+                                 country == "Iran"|
+                                 country == "Italy"|
+                                 country == "Spain"|
+                                 country == "China"|
+                                  country == "Germany"|
+                                   country == "Norway"|
+                                   country == "Sweden"|
+                                   country == "Finland"|
+                                   country == "Estonia"), aes(date, risk, color=country))+
   geom_line()+
   xlab(NULL)+
   scale_color_jcolors(palette = "rainbow")+
-  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
+  geom_dl(aes(label = iso3), method = list(dl.combine("last.points"), cex = 0.8))+
   theme(legend.position = "none") +
   labs(caption = "risk = cumulative deaths / cumulative cases")
 ```
@@ -268,10 +558,21 @@ ggplot(cov1 %>% filter(daterep> "2020-03-05"), aes(daterep, risk, color=country)
 ### Riskihinnangute konvergents 7-päevase nihkega andmete peal
 
 ```{r warning=FALSE}
-covid_cum1 %>% 
-  ggplot(aes(tp, risk_lag)) +
+cov_case_curve %>% filter(date> "2020-03-05",
+                                 country == "China"|
+                                 country == "US"|
+                                 country == "Iran"|
+                                 country == "Italy"|
+                                 country == "Spain"|
+                                 country == "China"|
+                                  country == "Germany"|
+                                   country == "Norway"|
+                                   country == "Sweden"|
+                                   country == "Finland"|
+                                   country == "Estonia") %>% 
+  ggplot(aes(days_elapsed, risk_7)) +
   geom_line(aes(color = country)) +
-  geom_dl(aes(label = geoid), method = list("last.points", cex = 0.8)) +
+  geom_dl(aes(label = iso3), method = list("last.points", cex = 0.8)) +
   scale_y_log10() +
   labs(x = "Time, days from first case", 
        y = "Risk of death")+
@@ -285,7 +586,7 @@ covid_cum1 %>%
 ## Kumulatiivne nakatunute arv riigiti
 
 ```{r}
-ggplot(cov %>% filter(daterep> "2020-03-05", 
+ggplot(cov_case_curve %>% filter(date> "2020-03-05", 
                       country %in% c("Estonia", 
                                      "Finland", 
                                      "Latvia", 
@@ -293,17 +594,18 @@ ggplot(cov %>% filter(daterep> "2020-03-05",
                                      "Lithuania",
                                      "Sweden",
                                      "Georgia",
-                                     "Norway")), 
-       aes(daterep, cumulative_cases, color=country))+
+                                     "Norway",
+                                     "Denmark")), 
+       aes(date, cu_cases, color=country))+
   geom_line()+
-  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
+  geom_dl(aes(label = iso3), method = list(dl.combine("last.points"), cex = 0.8))+
   theme(legend.position = "none", axis.title.x = element_blank())
 ```
 
 ## Kumulatiivsed surmad
 
 ```{r}
-ggplot(cov %>% filter(daterep> "2020-03-05", 
+ggplot(cov_case_curve %>% filter(date> "2020-03-05", 
                       country %in% c("Estonia", 
                                      "Finland", 
                                      "Latvia", 
@@ -311,16 +613,17 @@ ggplot(cov %>% filter(daterep> "2020-03-05",
                                      "Lithuania",
                                      "Sweden",
                                      "Georgia",
-                                     "Norway")), 
-       aes(daterep, cumulative_deaths, color=country))+
+                                     "Norway",
+                                     "Denmark")), 
+       aes(date, cu_deaths, color=country))+
   geom_line()+
-  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
+  geom_dl(aes(label = iso3), method = list(dl.combine("last.points"), cex = 0.8))+
   theme(legend.position = "none", axis.title.x = element_blank())
 ```
 
 ## nakatumisi 100 000 elaniku kohta
 ```{r}
-ggplot(cov %>% filter(daterep> "2020-03-05", 
+ggplot(cov_case_curve %>% filter(date> "2020-03-05", 
                       country %in% c("Estonia", 
                                      "Finland", 
                                      "Latvia", 
@@ -328,17 +631,18 @@ ggplot(cov %>% filter(daterep> "2020-03-05",
                                      "Lithuania",
                                      "Sweden",
                                      "Georgia",
-                                     "Norway")), 
-       aes(daterep, cases_per_100000, color=country))+
+                                     "Norway",
+                                     "Denmark")), 
+       aes(date, cases_per_100000, color=country))+
   geom_line()+
-  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
+  geom_dl(aes(label = iso3), method = list(dl.combine("last.points"), cex = 0.8))+
   theme(legend.position = "none", axis.title.x = element_blank())
 
 ```
 
 ## surmi 100 000 elaniku kohta
 ```{r}
-ggplot(cov %>% filter(daterep> "2020-03-05", 
+ggplot(cov_case_curve %>% filter(date> "2020-03-05", 
                       country %in% c("Estonia", 
                                      "Finland", 
                                      "Latvia", 
@@ -346,10 +650,11 @@ ggplot(cov %>% filter(daterep> "2020-03-05",
                                      "Lithuania",
                                      "Sweden",
                                      "Georgia",
-                                     "Norway")), 
-       aes(daterep, deaths_per_100000, color=country))+
+                                     "Norway",
+                                     "Denmark")), 
+       aes(date, deaths_per_100000, color=country))+
   geom_line()+
-  geom_dl(aes(label = geoid), method = list(dl.combine("last.points"), cex = 0.8))+
+  geom_dl(aes(label = iso3), method = list(dl.combine("last.points"), cex = 0.8))+
   theme(legend.position = "none", axis.title.x = element_blank())
 ```
 
@@ -359,8 +664,8 @@ ggplot(cov %>% filter(daterep> "2020-03-05",
 ## Uute nakatumiste arv Eestis
 
 ```{r}
-ggplot(covid %>% filter(daterep> "2020-03-01", country== "Estonia"), 
-       aes(daterep, cases))+
+ggplot(cov_case_curve %>% filter(date> "2020-03-01", country== "Estonia"), 
+       aes(date, cases))+
   geom_col()+
   theme(legend.position = "none", axis.title.x = element_blank())+
   ylab("Registreeritud haigusjuhud")
