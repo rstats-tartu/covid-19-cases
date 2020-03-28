@@ -31,9 +31,6 @@ invisible(lapply(pkg, library, character.only = TRUE))
 #+ import
 path <- here("data/COVID-19-geographic-disbtribution-worldwide.csv")
 covid <- read_csv(path)
-covid <- covid %>% 
-  rename(Country = `Countries and territories`) %>% 
-  rename_all(tolower)
 
 #' Resetting timeline to days since first case in each country.
 #+

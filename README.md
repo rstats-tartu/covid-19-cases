@@ -5,7 +5,7 @@ Website](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%2
 # COVID-19 cases and deaths
 
 rstats-tartu  
-last update: 2020-03-27 15:21:39
+last update: 2020-03-28 18:15:39
 
 ## Dataset
 
@@ -27,9 +27,6 @@ Importing downloaded dataset.
 ``` r
 path <- here("data/COVID-19-geographic-disbtribution-worldwide.csv")
 covid <- read_csv(path)
-covid <- covid %>% 
-  rename(Country = `Countries and territories`) %>% 
-  rename_all(tolower)
 ```
 
 Resetting timeline to days since first case in each country.
