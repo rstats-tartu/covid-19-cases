@@ -272,6 +272,9 @@ cov_case_curve <- cov_case_curve %>%
          smoothed_cases = zoo::rollmean(cases, k=3, fill=NA),
          smoothed_deaths =zoo::rollmean(deaths, k=3, fill=NA))
 
+#cov_case_curve_full <- cov_case_curve
+#cov_case_curve <- cov_case_curve %>% filter(cu_cases > 99)
+
 cov_curve <- covidx %>%
   select(date, cname, iso3, cases, deaths) %>%
   drop_na(iso3) %>%
@@ -347,7 +350,7 @@ top_50 <- cov_case_curve %>%
           country = recode(country, `United States` = "USA",
                         `Iran, Islamic Republic of` = "Iran", 
                         `Korea, Republic of` = "South Korea", 
-                        `United Kingdom` = "UK")) 
+                        `United Kingdom` = "UK")) %>% left_join(df1)
 
 
 cov_case_curve_bg <- cov_case_curve %>% 
@@ -362,28 +365,24 @@ cov_case_curve_endpoints <- cov_case_curve %>%
   group_by(iso3) %>%
   filter(cu_cases == max(cu_cases)) %>%
   select(country, iso3, days_elapsed, cu_cases) %>%
-  ungroup()
-
+  ungroup() %>% left_join(df1)
 
 cov_case_curve  %>%
 #  filter(iso3 %in% top_50$iso3) %>%
-  mutate(country = recode(country, `United States` = "USA",
-                        `Iran, Islamic Republic of` = "Iran", 
-                        `Korea, Republic of` = "South Korea", 
-                        `United Kingdom` = "UK")) %>%
+  filter(region == "Europe & Central Asia") %>%
   ggplot(mapping = aes(x = days_elapsed, y = cu_cases)) + 
   geom_line(data = cov_case_curve_bg, 
             aes(group = iso3),
             size = 0.15, color = "gray80") + 
   geom_line(color = "firebrick",
             lineend = "round") + 
-  geom_point(data = cov_case_curve_endpoints, 
+  geom_point(data = cov_case_curve_endpoints %>% filter(region == "Europe & Central Asia"), 
              size = 1.1, 
              shape = 21, 
              color = "firebrick",
              fill = "firebrick2"
              ) + 
-  geom_text(data = top_50, 
+  geom_text(data = top_50 %>% filter(region == "Europe & Central Asia"), 
              mapping = aes(label = country), 
              vjust = "inward", 
              hjust = "inward",
@@ -394,7 +393,7 @@ cov_case_curve  %>%
   facet_wrap(~ country, ncol = 5) + 
   labs(x = "Days Since 100th Confirmed Case", 
        y = "Cumulative Number of Cases (log10 scale)", 
-       title = "Cumulative Number of Reported Cases of COVID-19: Top 50 Countries", 
+       title = "Cumulative Number of Reported Cases of COVID-19: Europe", 
        subtitle = paste("Data as of", format(max(cov_curve$date), "%A, %B %e, %Y")), 
         caption = "Kieran Healy @kjhealy / Data: https://www.ecdc.europa.eu/") + 
   theme(plot.title = element_text(size = rel(1), face = "bold"),
@@ -411,6 +410,138 @@ cov_case_curve  %>%
 
 ```
 
+```{r}
+cov_case_curve  %>%
+#  filter(iso3 %in% top_50$iso3) %>%
+  filter(region %in% c("North America", "Latin America & Caribbean")) %>%
+  ggplot(mapping = aes(x = days_elapsed, y = cu_cases)) + 
+  geom_line(data = cov_case_curve_bg, 
+            aes(group = iso3),
+            size = 0.15, color = "gray80") + 
+  geom_line(color = "firebrick",
+            lineend = "round") + 
+  geom_point(data = cov_case_curve_endpoints %>% filter(region %in% c("North America", "Latin America & Caribbean")), 
+             size = 1.1, 
+             shape = 21, 
+             color = "firebrick",
+             fill = "firebrick2"
+             ) + 
+  geom_text(data = top_50 %>% filter(region %in% c("North America", "Latin America & Caribbean")), 
+             mapping = aes(label = country), 
+             vjust = "inward", 
+             hjust = "inward",
+             fontface = "bold", 
+             color = "firebrick", 
+             size = 3) + 
+  scale_y_log10() + 
+  facet_wrap(~ country, ncol = 5) + 
+  labs(x = "Days Since 100th Confirmed Case", 
+       y = "Cumulative Number of Cases (log10 scale)", 
+       title = "Cumulative Number of Reported Cases of COVID-19: Americas", 
+       subtitle = paste("Data as of", format(max(cov_curve$date), "%A, %B %e, %Y")), 
+        caption = "Kieran Healy @kjhealy / Data: https://www.ecdc.europa.eu/") + 
+  theme(plot.title = element_text(size = rel(1), face = "bold"),
+          plot.subtitle = element_text(size = rel(0.7)),
+          plot.caption = element_text(size = rel(1)),
+          strip.text = element_blank(),
+          panel.spacing.x = unit(-0.05, "lines"),
+          panel.spacing.y = unit(0.3, "lines"),
+          axis.text.y = element_text(size = rel(0.5)),
+          axis.title.x = element_text(size = rel(1)),
+          axis.title.y = element_text(size = rel(1)),
+          axis.text.x = element_text(size = rel(0.5)),
+          legend.text = element_text(size = rel(1)))
+```
+```{r}
+unique(cov_case_curve$region)
+```
+
+
+```{r}
+cov_case_curve  %>%
+#  filter(iso3 %in% top_50$iso3) %>%
+  filter(region %in% c("East Asia & Pacific", "South Asia")) %>%
+  ggplot(mapping = aes(x = days_elapsed, y = cu_cases)) + 
+  geom_line(data = cov_case_curve_bg, 
+            aes(group = iso3),
+            size = 0.15, color = "gray80") + 
+  geom_line(color = "firebrick",
+            lineend = "round") + 
+  geom_point(data = cov_case_curve_endpoints %>% filter(region %in% c("East Asia & Pacific", "South Asia")), 
+             size = 1.1, 
+             shape = 21, 
+             color = "firebrick",
+             fill = "firebrick2"
+             ) + 
+  geom_text(data = top_50 %>% filter(region %in% c("East Asia & Pacific", "South Asia")), 
+             mapping = aes(label = country), 
+             vjust = "inward", 
+             hjust = "inward",
+             fontface = "bold", 
+             color = "firebrick", 
+             size = 3) + 
+  scale_y_log10() + 
+  facet_wrap(~ country, ncol = 5) + 
+  labs(x = "Days Since 100th Confirmed Case", 
+       y = "Cumulative Number of Cases (log10 scale)", 
+       title = "Cumulative Number of Reported Cases of COVID-19: Asia", 
+       subtitle = paste("Data as of", format(max(cov_curve$date), "%A, %B %e, %Y")), 
+        caption = "Kieran Healy @kjhealy / Data: https://www.ecdc.europa.eu/") + 
+  theme(plot.title = element_text(size = rel(1), face = "bold"),
+          plot.subtitle = element_text(size = rel(0.7)),
+          plot.caption = element_text(size = rel(1)),
+          strip.text = element_blank(),
+          panel.spacing.x = unit(-0.05, "lines"),
+          panel.spacing.y = unit(0.3, "lines"),
+          axis.text.y = element_text(size = rel(0.5)),
+          axis.title.x = element_text(size = rel(1)),
+          axis.title.y = element_text(size = rel(1)),
+          axis.text.x = element_text(size = rel(0.5)),
+          legend.text = element_text(size = rel(1)))
+```
+
+```{r}
+cov_case_curve  %>%
+#  filter(iso3 %in% top_50$iso3) %>%
+  filter(region %in% c("Middle East & North Africa", "Sub-Saharan Africa")) %>%
+  ggplot(mapping = aes(x = days_elapsed, y = cu_cases)) + 
+  geom_line(data = cov_case_curve_bg, 
+            aes(group = iso3),
+            size = 0.15, color = "gray80") + 
+  geom_line(color = "firebrick",
+            lineend = "round") + 
+  geom_point(data = cov_case_curve_endpoints %>% filter(region %in% c("Middle East & North Africa", "Sub-Saharan Africa")), 
+             size = 1.1, 
+             shape = 21, 
+             color = "firebrick",
+             fill = "firebrick2"
+             ) + 
+  geom_text(data = top_50 %>% filter(region %in% c("Middle East & North Africa", "Sub-Saharan Africa")), 
+             mapping = aes(label = country), 
+             vjust = "inward", 
+             hjust = "inward",
+             fontface = "bold", 
+             color = "firebrick", 
+             size = 3) + 
+  scale_y_log10() + 
+  facet_wrap(~ country, ncol = 5) + 
+  labs(x = "Days Since 100th Confirmed Case", 
+       y = "Cumulative Number of Cases (log10 scale)", 
+       title = "Cumulative Number of Reported Cases of COVID-19: Middle East & Africa", 
+       subtitle = paste("Data as of", format(max(cov_curve$date), "%A, %B %e, %Y")), 
+        caption = "Kieran Healy @kjhealy / Data: https://www.ecdc.europa.eu/") + 
+  theme(plot.title = element_text(size = rel(1), face = "bold"),
+          plot.subtitle = element_text(size = rel(0.7)),
+          plot.caption = element_text(size = rel(1)),
+          strip.text = element_blank(),
+          panel.spacing.x = unit(-0.05, "lines"),
+          panel.spacing.y = unit(0.3, "lines"),
+          axis.text.y = element_text(size = rel(0.5)),
+          axis.title.x = element_text(size = rel(1)),
+          axis.title.y = element_text(size = rel(1)),
+          axis.text.x = element_text(size = rel(0.5)),
+          legend.text = element_text(size = rel(1)))
+```
 
 ```{r}
 ggplot(cov_case_curve %>% filter(date> "2020-03-01"), 
