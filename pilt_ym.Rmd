@@ -167,8 +167,8 @@ coalesce_join <- function(x, y,
 ## Country codes. The ECDC does not quite use standard codes for countries
 ## These are the iso2 and iso3 codes, plus some convenient groupings for
 ## possible use later
-iso3_countrys <- read_csv("data/countries_iso3.csv")
-iso2_to_iso3 <- read_csv("data/iso2_to_iso3.csv")
+iso3_countrys <- read_csv(here("data/countries_iso3.csv"))
+iso2_to_iso3 <- read_csv(here("data/iso2_to_iso3.csv"))
 
 country_table <- left_join(iso3_countrys, iso2_to_iso3)
 
