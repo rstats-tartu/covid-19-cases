@@ -4,7 +4,7 @@
 #' date: ""
 #' ---
 #' 
-#' ![Render and Deploy Website](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20Deploy%20Website/badge.svg)
+#' ![Render and Deploy Readme](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20Deploy%20Readme/badge.svg)
 #' 
 #' # COVID-19 cases and deaths
 #' rstats-tartu    

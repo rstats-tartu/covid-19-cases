@@ -1,10 +1,10 @@
-name: Render and Deploy Website
+name: Render and Deploy Readme
 on: 
   push:
     branches:
       - master
   schedule:
-    - cron:  "0 9 * * *"
+    - cron:  "1 9,13,17,21 * * *"
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -36,14 +36,6 @@ jobs:
         run: |
           git add README.md README_files/
           git commit -m 'Re-build README.Rmd' || echo "No changes to commit"
-          git push https://${{github.actor}}:${{secrets.GITHUB_TOKEN}}@github.com/${{github.repository}}.git HEAD:${{ github.ref }} || echo "No changes to commit"
-      - name: Render index
-        run: |-
-          Rscript -e "rmarkdown::render('pilt_ym.Rmd', output_format = bookdown::html_document2(), output_file = 'index.html')"
-      - name: Commit index
-        run: |
-          git add index.html
-          git commit -m 'Re-build index.html' || echo "No changes to commit"
           git push https://${{github.actor}}:${{secrets.GITHUB_TOKEN}}@github.com/${{github.repository}}.git HEAD:${{ github.ref }} || echo "No changes to commit"
     container: rocker/verse:latest
     
