@@ -302,6 +302,18 @@ ggplot(cov_case_curve %>% filter(date> "2020-03-01"), aes(date, cases, fill=regi
   
 ```
 
+
+```{r}
+ggplot(cov_case_curve %>% 
+         filter(date>= "2020-03-01") %>% 
+         group_by(region, date) %>% 
+         summarise(cases=sum(cases)), 
+       aes(date, cases, color=region))+
+  geom_line()+
+  ggthemes::theme_tufte()+
+  theme(axis.title.x = element_blank())
+```
+
 ## Uute surmade arv 
 
 ```{r}
@@ -311,6 +323,16 @@ ggplot(cov_case_curve %>% filter(date> "2020-03-01"), aes(date, deaths, fill=reg
   theme(axis.title.x = element_blank())
 ```
 
+```{r}
+ggplot(cov_case_curve %>% 
+         filter(date>= "2020-03-01") %>% 
+         group_by(region, date) %>% 
+         summarise(deaths=sum(deaths)), 
+       aes(date, deaths, color=region))+
+  geom_line()+
+  ggthemes::theme_tufte()+
+  theme(axis.title.x = element_blank())
+```
 
 ## Uued nakatumised, silutud liikuva keskmisega (k=3)
 
@@ -451,9 +473,6 @@ cov_case_curve  %>%
           axis.title.y = element_text(size = rel(1)),
           axis.text.x = element_text(size = rel(0.5)),
           legend.text = element_text(size = rel(1)))
-```
-```{r}
-unique(cov_case_curve$region)
 ```
 
 
