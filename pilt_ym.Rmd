@@ -779,7 +779,9 @@ est_summary_3 <- est %>% group_by(resultsdate, County) %>%
          cu_negatives= cumsum(negatives),
          cu_tested= cumsum(tested),
          cu_frac = cummean(frac),
-         smoothed_frac = zoo::rollmean(frac, k=3, fill=NA))
+         smoothed_frac = zoo::rollmean(frac, k=3, fill=NA),
+         lag_cases = lag(cu_cases, 8),
+         active_cases = cu_cases - lag_cases)
 
 est_summary_4 <- est %>% group_by(resultsdate) %>% 
   summarise(cases= sum(Result), 
@@ -827,6 +829,19 @@ ggplot(est_summary_3 %>% filter(resultsdate > "2020-03-01"),
 ggplot(est_summary_3 %>% filter(resultsdate > "2020-03-01"), aes(resultsdate, cu_cases, color=County)) + geom_line()+  
   geom_dl(aes(label = County), method = list("last.points", cex = 0.8)) +
   scale_y_log10() +
+  theme(legend.position = "none", axis.title.x = element_blank())
+```
+
+## aktiivsed haigusjuhud (lag 8 päeva)
+```{r message=FALSE, warning=FALSE}
+ggplot(est_summary_3 %>% filter(resultsdate > "2020-03-01", 
+                                County %in% c("Saaremaa", 
+                                              "Võru", 
+                                              "Harju", 
+                                              "Tartu")), 
+aes(resultsdate, active_cases, color=County)) + geom_line()+  
+  geom_dl(aes(label = County), method = list("last.points", cex = 0.8)) +
+  #scale_y_log10() +
   theme(legend.position = "none", axis.title.x = element_blank())
 ```
 
