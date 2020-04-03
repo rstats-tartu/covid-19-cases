@@ -26,28 +26,7 @@ old <- theme_set(ggthemes::theme_tufte())
 ```
 
 
-```{r eval=FALSE}
-#taavi kood
 
-#' Importing downloaded dataset.
-#+ import
-path <- here("data/COVID-19-geographic-disbtribution-worldwide.csv")
-covid <- read_csv(path)
-covid <- covid %>% 
-  mutate(date = paste(year, month, day, sep = "-"))
-
-cov <- covid %>% arrange(geoid, daterep) %>% 
-  group_by(geoid) %>% 
-  mutate(cumulative_cases= cumsum(cases), 
-         cumulative_deaths=cumsum(deaths), 
-         risk=cumulative_deaths/cumulative_cases,
-         lag_cases_7 = dplyr::lag(cumulative_cases, n=7),
-         risk_7=cumulative_deaths/lag_cases_7,
-         smoothed_cases = zoo::rollmean(cases, k=3, fill=NA),
-         smoothed_deaths =zoo::rollmean(deaths, k=3, fill=NA)
-         ) 
-cov$country[cov$country == "United_States_of_America"] <- "US"
-```
 
 ```{r}
 df1 <- read_csv("data/country_data.csv") %>% 
@@ -55,44 +34,7 @@ df1 <- read_csv("data/country_data.csv") %>%
   filter(country != "Diamond Princess") %>% 
   mutate_at("country", ~gsub("[ ,]+", "_", .x)) %>% 
   mutate_at("country", ~gsub("\\*$", "", .x))
-```
 
-```{r eval=FALSE}
-cov <- cov %>% left_join(df1)
-cov <- cov %>% mutate(cases_per_100000= (cumulative_cases/population)*100000, 
-                      deaths_per_100000= (cumulative_deaths/population)*100000)
-cov1 <- cov %>% group_by(country) %>% filter(max(cumulative_cases)>10000)
-
-#taavi kood:
-covid_by_country1 <- covid %>% 
-  filter(cases > 100) %>% 
-  group_by(country) %>% 
-  mutate(tp = interval(Sys.Date(), daterep) / ddays(1),
-         tp = tp - min(tp))
-lag_n <- 7
-covid_cum1 <- covid_by_country1 %>% 
-  mutate(cum_cases = with_order(tp, cumsum, cases),
-         cum_deaths = with_order(tp, cumsum, deaths),
-         risk = cum_deaths / cum_cases,
-         risk_lag = cum_deaths / lag(cum_cases, n = lag_n, order_by = tp)) %>% 
-  ungroup() %>% filter(geoid != "JPG11668")
-
-covid_by_country2 <- covid %>% 
-  filter(deaths > 3) %>% 
-  group_by(country) %>% 
-  mutate(tp = interval(Sys.Date(), daterep) / ddays(1),
-         tp = tp - min(tp))
-lag_n <- 7
-covid_cum2 <- covid_by_country2 %>% 
-  mutate(cum_cases = with_order(tp, cumsum, cases),
-         cum_deaths = with_order(tp, cumsum, deaths),
-         risk = cum_deaths / cum_cases,
-         risk_lag = cum_deaths / lag(cum_cases, n = lag_n, order_by = tp)) %>% 
-  ungroup() %>% filter(geoid != "JPG11668")
-```
-
-
-```{r}
 theme_covid <- function() { 
     theme_classic() +
     theme(plot.title = element_text(size = rel(2), face = "bold"),
@@ -109,9 +51,7 @@ theme_covid <- function() {
 theme_set(theme_covid())
 col_pal <- c("#E69F00", "#0072B2", "#000000", "#56B4E9", 
              "#009E73", "#F0E442", "#D55E00", "#CC79A7")
-```
 
-```{r}
 get_ecdc_csv <- function(url = "https://opendata.ecdc.europa.eu/covid19/casedistribution/csv",
                           date = lubridate::today(), 
                           writedate = lubridate::today(), 
@@ -131,8 +71,6 @@ get_ecdc_csv <- function(url = "https://opendata.ecdc.europa.eu/covid19/casedist
   
   janitor::clean_names(readr::read_csv(tf))
 }                          
-
-
 
 ## A useful function from Edward Visel, which does a thing
 ## with tibbles that in the past I've done variable-by-variable
@@ -191,7 +129,6 @@ north_america <- c("AIA", "ATG", "ABW", "BHS", "BRB", "BLZ", "BMU", "VGB", "CAN"
 south_america <- c("ARG", "BOL", "BRA", "CHL", "COL", "ECU", "FLK", "GUF", "GUY", "PRY",
                    "PER", "SUR", "URY", "VEN")
 
-
 africa <- c("DZA", "AGO", "SHN", "BEN", "BWA", "BFA", "BDI", "CMR", "CPV", "CAF",
         "TCD", "COM", "COG", "DJI", "EGY", "GNQ", "ERI", "ETH", "GAB", "GMB",
         "GHA", "GNB", "GIN", "CIV", "KEN", "LSO", "LBR", "LBY", "MDG", "MWI",
@@ -211,7 +148,6 @@ oceania <- c("ASM", "AUS", "NZL", "COK", "FJI", "PYF", "GUM", "KIR", "MNP", "MHL
         "FSM", "UMI", "NRU", "NCL", "NZL", "NIU", "NFK", "PLW", "PNG", "MNP",
         "SLB", "TKL", "TON", "TUV", "VUT", "UMI", "WLF", "WSM", "TLS")
 covid_raw <- get_ecdc_csv()
-
 
 ## on 3/27/20 they changed the contents of the file too, including the date format
 covidx <- covid_raw %>%
@@ -294,12 +230,10 @@ cov_curve <- covidx %>%
 ## Uute nakatumiste arv
 
 ```{r}
-
 ggplot(cov_case_curve %>% filter(date> "2020-03-01"), aes(date, cases, fill=region))+
   geom_col()+
   ggthemes::theme_tufte()+
   theme(axis.title.x = element_blank())
-  
 ```
 
 
@@ -786,13 +720,132 @@ ggplot(cov_case_curve %>% filter(date> "2020-03-05",
 # 3. Eesti
 
 
-## Uute nakatumiste arv Eestis
-
 ```{r}
-ggplot(cov_case_curve %>% filter(date> "2020-03-01", country== "Estonia"), 
-       aes(date, cases))+
-  geom_col()+
-  theme(legend.position = "none", axis.title.x = element_blank())+
-  ylab("Registreeritud haigusjuhud")
+est <- read_csv("data/opendata_covid19_test_results.csv")
+est <- est %>% mutate(Result = case_when(
+  ResultValue=="N" ~ 0,
+  TRUE ~ 1
+))
+
+est <- est %>% mutate(County = case_when(
+  County == "Tartu maakond" ~ "Tartu",
+  County == "Võru maakond" ~ "Võru",
+  County == "Saare maakond" ~ "Saaremaa",
+  County == "Rapla maakond" ~ "Rapla",
+  County == "Harju maakond" ~ "Harju",
+  County == "Pärnu maakond" ~ "Pärnu",
+  County == "Lääne-Viru maakond" ~ "L-Viru",
+  County == "Hiiu maakond" ~ "Hiiumaa",
+  County == "Viljandi maakond" ~ "Viljandi",
+  County == "Jõgeva maakond" ~ "Jõgeva",
+  County == "Põlva maakond" ~ "Põlva",
+  County == "Järva maakond" ~ "Järva",
+  County == "Valga maakond" ~ "Valga",
+  County == "Lääne maakond" ~ "Läänemaa",
+  County == "Ida-Viru maakond" ~ "I-Viru",
+))
+
+est <- est %>% separate(ResultTime, into = c("resultsdate", "kellaaeg"), sep=" ") %>% 
+  filter(County != "Eesti")
+est$resultsdate <- as_datetime(est$resultsdate)
+
+est_summary <- est %>% group_by(resultsdate, AgeGroup, Gender, County) %>% 
+  summarise(cases= sum(Result), 
+            tested= n(), 
+            negatives= tested - cases, 
+            frac= cases/tested)
+
+est_summary_2 <- est_summary <- est %>% 
+  group_by(resultsdate, AgeGroup) %>% 
+  summarise(cases= sum(Result), 
+            tested= n(), 
+            negatives= tested - cases, 
+            frac= cases/tested) %>% 
+  arrange(resultsdate) %>% 
+  group_by(AgeGroup) %>% 
+  mutate(cu_cases= cumsum(cases), 
+         cu_negatives= cumsum(negatives),
+         cu_tested= cumsum(tested),
+         cu_frac = cummean(frac))
+
+est_summary_3 <- est %>% group_by(resultsdate, County) %>% 
+  summarise(cases= sum(Result), 
+            tested= n(), 
+            negatives= tested - cases, 
+            frac= cases/tested) %>% 
+  arrange(resultsdate) %>% 
+  group_by(County) %>% 
+  mutate(cu_cases= cumsum(cases), 
+         cu_negatives= cumsum(negatives),
+         cu_tested= cumsum(tested),
+         cu_frac = cummean(frac),
+         smoothed_frac = zoo::rollmean(frac, k=3, fill=NA))
+
+est_summary_4 <- est %>% group_by(resultsdate) %>% 
+  summarise(cases= sum(Result), 
+            tested= n(), 
+            negatives= tested - cases, 
+            frac= cases/tested) %>% 
+  arrange(resultsdate) %>% 
+  mutate(cu_cases= cumsum(cases), 
+         cu_negatives= cumsum(negatives),
+         cu_tested= cumsum(tested),
+         cu_frac = cummean(frac),
+         smoothed_cases = zoo::rollmean(cases, k=3, fill=NA))
 ```
 
+## uued nakatumised värvitud maakonna kaupa
+```{r message=FALSE, warning=FALSE}
+ggplot(est_summary_3 %>% filter(resultsdate > "2020-03-01"), 
+       aes(resultsdate, cases, fill=County)) + geom_col()+  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  theme(legend.position = "none", axis.title.x = element_blank())+
+  xlab(NULL)
+```
+
+## uued nakatumised tasandatud liikuva keskmisega
+```{r message=FALSE, warning=FALSE}
+ggplot(est_summary_4 %>% filter(resultsdate > "2020-03-01"), 
+       aes(resultsdate, smoothed_cases)) + geom_col()+  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  xlab(NULL)
+```
+
+
+## uued nakatumised maakonna kaupa
+```{r message=FALSE, warning=FALSE}
+ggplot(est_summary_3 %>% filter(resultsdate > "2020-03-01"), 
+       aes(resultsdate, cases)) + geom_col()+  
+  facet_wrap(~County)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5))+
+  xlab(NULL)
+```
+
+## kumulatiivsed nakatumised maakonna kaupa
+```{r message=FALSE, warning=FALSE}
+ggplot(est_summary_3 %>% filter(resultsdate > "2020-03-01"), aes(resultsdate, cu_cases, color=County)) + geom_line()+  
+  geom_dl(aes(label = County), method = list("last.points", cex = 0.8)) +
+  scale_y_log10() +
+  theme(legend.position = "none", axis.title.x = element_blank())
+```
+
+## positiivsete testide osakaal kumulatiivse keskmisena
+
+```{r}
+ggplot(est_summary_3 %>% filter(resultsdate > "2020-03-26"), aes(resultsdate, cu_frac, color=County)) + geom_line()+  
+  geom_dl(aes(label = County), method = list("last.points", cex = 0.8)) +
+  theme(legend.position = "none", axis.title.x = element_blank())
+```
+
+## sama liikuva keskmisega silutud
+```{r}
+ggplot(est_summary_3 %>% filter(resultsdate > "2020-03-26", 
+                                County %in% c("Saaremaa", 
+                                              "Võru", 
+                                              "Harju", 
+                                              "Tartu")), 
+       aes(resultsdate, smoothed_frac, color=County)) + 
+  geom_line()+  
+  geom_dl(aes(label = County), method = list("last.points", cex = 0.8)) +
+  theme(legend.position = "none", axis.title.x = element_blank())
+```
