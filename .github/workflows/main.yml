@@ -18,12 +18,13 @@ jobs:
       - name: Download dataset
         run: |-
           Rscript scripts/get_data.R
+          curl -o data/opendata_covid19_test_results.csv https://opendata.digilugu.ee/opendata_covid19_test_results.csv
       - name: Commit dataset
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add data/COVID-19-geographic-disbtribution-worldwide.csv
-          git commit -m 'Updated dataset' || echo "No changes to commit"
+          git add data/COVID-19-geographic-disbtribution-worldwide.csv data/opendata_covid19_test_results.csv
+          git commit -m 'Updated datasets' || echo "No changes to commit"
           git push https://${{github.actor}}:${{secrets.GITHUB_TOKEN}}@github.com/${{github.repository}}.git HEAD:${{ github.ref }} || echo "No changes to commit"
       - name: Render README
         run: |-
