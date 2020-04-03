@@ -817,6 +817,7 @@ ggplot(est_summary_4 %>% filter(resultsdate > "2020-03-01"),
 ggplot(est_summary_3 %>% filter(resultsdate > "2020-03-01"), 
        aes(resultsdate, cases)) + geom_col()+  
   facet_wrap(~County)+
+  ggthemes::theme_tufte()+
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 0.5))+
   xlab(NULL)
 ```
