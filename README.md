@@ -5,7 +5,7 @@ Readme](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20
 # COVID-19 cases and deaths
 
 rstats-tartu  
-last update: 2020-04-03 21:07:08
+last update: 2020-04-04 09:07:25
 
 ## Dataset
 
@@ -82,10 +82,6 @@ covid_cum %>%
        caption = "Each line represents one country")
 ```
 
-    ## Warning: Transformation introduced infinite values in continuous y-axis
-    
-    ## Warning: Transformation introduced infinite values in continuous y-axis
-
 ![](README_files/figure-gfm/plot-deaths-dates-1.png)<!-- -->
 
 ## Cases and deaths on relative time scale
@@ -118,10 +114,6 @@ covid_cum %>%
        caption = "Each line represents one country")
 ```
 
-    ## Warning: Transformation introduced infinite values in continuous y-axis
-    
-    ## Warning: Transformation introduced infinite values in continuous y-axis
-
 ![](README_files/figure-gfm/plot-deaths-1.png)<!-- -->
 
 ## Risk of death
@@ -136,10 +128,6 @@ covid_cum %>%
        y = "Risk of death",
        caption = "Each line represents one country")
 ```
-
-    ## Warning: Transformation introduced infinite values in continuous y-axis
-    
-    ## Warning: Transformation introduced infinite values in continuous y-axis
 
 ![](README_files/figure-gfm/plot-risk-1.png)<!-- -->
 
