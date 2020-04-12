@@ -129,7 +129,7 @@ covid_cum %>%
 
 #' Cases in Estonia
 #+
-est <- read_csv("data/opendata_covid19_test_results.csv")
+est <- read_csv(here("data/opendata_covid19_test_results.csv"))
 est <- est %>% 
   mutate(result_wk = isoweek(ResultTime),
          ResultDate = date(ResultTime))
