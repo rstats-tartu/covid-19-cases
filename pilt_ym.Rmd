@@ -721,7 +721,7 @@ ggplot(cov_case_curve %>% filter(date> "2020-03-05",
 
 
 ```{r}
-est <- read_csv(here("data/opendata_covid19_test_results.csv"))
+est <- read_csv("https://opendata.digilugu.ee/opendata_covid19_test_results.csv")
 est <- est %>% mutate(Result = case_when(
   ResultValue=="N" ~ 0,
   TRUE ~ 1
