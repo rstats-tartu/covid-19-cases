@@ -1,13 +1,12 @@
-pkg <- c("dplyr", "readxl", "readr", "glue")
+pkg <- c("dplyr", "readr")
 invisible(lapply(pkg, library, character.only = TRUE))
 
-yesterday <- Sys.Date() - 1
-url <- glue("https://www.ecdc.europa.eu/sites/default/files/documents/COVID-19-geographic-disbtribution-worldwide-{yesterday}.xlsx")
+url <- "https://opendata.ecdc.europa.eu/covid19/casedistribution/csv"
 temp <- tempfile()
 resp <- try(download.file(url, temp), silent = TRUE)
 
 if (!inherits(resp, "try-error")) {
-  raw <- read_excel(temp)
+  raw <- read_csv(temp)
   # Check if colnames match
   stopifnot(
     all.equal(
@@ -20,7 +19,7 @@ if (!inherits(resp, "try-error")) {
     rename_all(tolower) %>% 
     rename_all(~gsub("_", "", .x)) %>% 
     rename(country = countriesandterritories)
-  write_csv(proc, "data/COVID-19-geographic-disbtribution-worldwide.csv")
+  write_csv(proc, "data/COVID-19-geographic-distribution-worldwide.csv")
 }
 
 unlink(temp)
