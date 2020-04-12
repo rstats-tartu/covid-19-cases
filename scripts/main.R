@@ -27,10 +27,10 @@ pkg <- c("dplyr", "tidyr", "readr", "lubridate", "here", "ggplot2", "directlabel
 invisible(lapply(pkg, library, character.only = TRUE))
 
 
-#' Importing downloaded dataset.
+#' Importing downloaded ECDC daily COVID-19 dataset. 
 #+ import
-path <- here("data/COVID-19-geographic-disbtribution-worldwide.csv")
-covid <- read_csv(path)
+path <- here("data/COVID-19-geographic-distribution-worldwide.csv")
+covid <- read_csv(path, col_types = cols(daterep = col_date(format = "%d/%m/%Y")))
 
 #' Resetting timeline to days since first case in each country.
 #+
