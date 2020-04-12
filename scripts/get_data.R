@@ -5,7 +5,7 @@ invisible(lapply(pkg, library, character.only = TRUE))
 # Download worldwide data
 url <- "https://opendata.ecdc.europa.eu/covid19/casedistribution/csv"
 temp <- tempfile()
-resp <- try(download.file(url, temp), silent = TRUE)
+resp <- try(download.file(url, temp, method = "libcurl"), silent = TRUE)
 
 if (!inherits(resp, "try-error")) {
   raw <- read_csv(temp)
