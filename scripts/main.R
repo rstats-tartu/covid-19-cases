@@ -16,7 +16,7 @@
 #' and Control](https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide).
 #'
 #+ chunk_opts, include=FALSE
-knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
 
 
 #' ## Setting up data
@@ -159,7 +159,8 @@ est %>%
   na.omit() %>% 
   ggplot() +
   geom_point(aes(result_wk, pp, size = tests)) +
-  scale_y_continuous(labels = scales::percent)
+  scale_y_continuous(labels = scales::percent) +
+  labs(y = "Positive tests, %")
 
 
 #' When are the analyses performed and reported during the day.
@@ -218,7 +219,3 @@ processing %>%
   labs(x = "Week of the 2020", 
        y = "Median time from\ntest result to database insert, hours",
        size = "Number of tests\nper week, log10")
-
-
-
-
