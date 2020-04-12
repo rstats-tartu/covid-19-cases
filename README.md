@@ -5,7 +5,7 @@ Readme](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20
 # COVID-19 cases and deaths
 
 rstats-tartu  
-last update: 2020-04-11 21:07:14
+last update: 2020-04-12 07:08:19
 
 ## Dataset
 
@@ -22,11 +22,11 @@ pkg <- c("dplyr", "tidyr", "readr", "lubridate", "here", "ggplot2", "directlabel
 invisible(lapply(pkg, library, character.only = TRUE))
 ```
 
-Importing downloaded dataset.
+Importing downloaded ECDC daily COVID-19 dataset.
 
 ``` r
-path <- here("data/COVID-19-geographic-disbtribution-worldwide.csv")
-covid <- read_csv(path)
+path <- here("data/COVID-19-geographic-distribution-worldwide.csv")
+covid <- read_csv(path, col_types = cols(daterep = col_date(format = "%d/%m/%Y")))
 ```
 
 Resetting timeline to days since first case in each country.
