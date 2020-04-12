@@ -5,7 +5,7 @@ Readme](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20
 # COVID-19 cases and deaths
 
 rstats-tartu  
-last update: 2020-04-12 15:27:06
+last update: 2020-04-12 15:41:09
 
 ## Dataset
 
@@ -186,7 +186,9 @@ est %>%
   na.omit() %>% 
   ggplot() +
   geom_point(aes(result_wk, pp, size = tests)) +
-  scale_y_continuous(labels = scales::percent)
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Week of the 2020",
+       y = "Positive tests, %")
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
@@ -210,12 +212,6 @@ processing <- est %>%
          insert_time = daytime(AnalysisInsertTime)) %>% 
   select(id, result_wk, result_to_insert, result_time, insert_time)
 ```
-
-    ## Warning in if (nchar(s) == 1) {: the condition has length > 1 and only the first
-    ## element will be used
-    
-    ## Warning in if (nchar(s) == 1) {: the condition has length > 1 and only the first
-    ## element will be used
 
 Results timestamps during day.
 
@@ -252,12 +248,6 @@ processing %>%
   labs(x = "Time from test result to database insert, hours", 
        y = "Percent cases")
 ```
-
-    ## Warning in self$trans$transform(x): NaNs produced
-
-    ## Warning: Transformation introduced infinite values in continuous x-axis
-
-    ## Warning: Removed 3 rows containing non-finite values (stat_bin).
 
 ![](README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
