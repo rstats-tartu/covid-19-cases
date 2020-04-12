@@ -18,13 +18,6 @@ jobs:
       - name: Download datasets
         run: |-
           Rscript scripts/get_data.R
-      - name: Commit dataset
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add data/COVID-19-geographic-distribution-worldwide.csv data/opendata_covid19_test_results.csv
-          git commit -m 'Updated datasets' || echo "No changes to commit"
-          git push https://${{github.actor}}:${{secrets.GITHUB_TOKEN}}@github.com/${{github.repository}}.git HEAD:${{ github.ref }} || echo "No changes to commit"
       - name: Render README
         run: |-
           Rscript -e "rmarkdown::render('scripts/main.R', output_format = rmarkdown::github_document(), output_file = 'README.md')"
@@ -34,6 +27,8 @@ jobs:
           rm -rf scripts/README*
       - name: Commit README
         run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
           git add README.md README_files/
           git commit -m 'Re-build README.Rmd' || echo "No changes to commit"
           git push https://${{github.actor}}:${{secrets.GITHUB_TOKEN}}@github.com/${{github.repository}}.git HEAD:${{ github.ref }} || echo "No changes to commit"
