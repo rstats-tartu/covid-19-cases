@@ -160,7 +160,8 @@ est %>%
   ggplot() +
   geom_point(aes(result_wk, pp, size = tests)) +
   scale_y_continuous(labels = scales::percent) +
-  labs(y = "Positive tests, %")
+  labs(x = "Week of the 2020",
+       y = "Positive tests, %")
 
 
 #' When are the analyses performed and reported during the day.
