@@ -1,6 +1,8 @@
 pkg <- c("dplyr", "readr")
 invisible(lapply(pkg, library, character.only = TRUE))
 
+
+# Download worldwide data
 url <- "https://opendata.ecdc.europa.eu/covid19/casedistribution/csv"
 temp <- tempfile()
 resp <- try(download.file(url, temp), silent = TRUE)
@@ -23,3 +25,10 @@ if (!inherits(resp, "try-error")) {
 }
 
 unlink(temp)
+
+# Download Estonian data
+download.file(
+  "https://opendata.digilugu.ee/opendata_covid19_test_results.csv", 
+  "data/opendata_covid19_test_results.csv"
+  )
+
