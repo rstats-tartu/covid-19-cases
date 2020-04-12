@@ -51,10 +51,10 @@ covid_cum <- covid_by_country %>%
          risk_lag = cum_deaths / lag(cum_cases, n = lag_n, order_by = tp)) %>% 
   ungroup()
 
-#' ## Cases and deaths in real time
+#' ## Worldwide cases and deaths
 #' 
-#' Covid-19 cases.
-#'  
+#' COVID-19 cases worldwide.
+#'
 #+ plot-cases-dates
 covid_cum %>% 
   ggplot(aes(daterep, cum_cases, group = country)) +
@@ -65,7 +65,7 @@ covid_cum %>%
        y = "Cumulative number of cases",
        caption = "Each line represents one country")
 
-#' Covid-19 deaths. 
+#' COVID-19 deaths worldwide. 
 #' 
 #+ plot-deaths-dates
 covid_cum %>% 
@@ -126,4 +126,99 @@ covid_cum %>%
   labs(x = "Time, days from first case", 
        y = "Risk of death",
        caption = "Each line represents one country")
+
+#' Cases in Estonia
+#+
+est <- read_csv("data/opendata_covid19_test_results.csv")
+est <- est %>% 
+  mutate(result_wk = isoweek(ResultTime),
+         ResultDate = date(ResultTime))
+
+#' Number of cases per week.
+#+
+est %>% 
+  count(result_wk, ResultValue) %>% 
+  mutate(ResultValue = case_when(
+    ResultValue == "N" ~ "Negative",
+    ResultValue == "P" ~ "Positive"
+  )) %>% 
+  ggplot() +
+  geom_col(aes(result_wk, n)) +
+  facet_wrap(~ ResultValue, scales = "free_y") +
+  scale_x_continuous(breaks = scales::pretty_breaks()) +
+  labs(x = "Week of the 2020",
+       y = "Number of tests")
+
+#' Percent of positive cases per week.
+#+
+est %>% 
+  count(result_wk, ResultValue) %>% 
+  pivot_wider(names_from = ResultValue, values_from = n) %>% 
+  mutate(tests = N + P,
+         pp = P / tests) %>% 
+  na.omit() %>% 
+  ggplot() +
+  geom_point(aes(result_wk, pp, size = tests)) +
+  scale_y_continuous(labels = scales::percent)
+
+
+#' When are the analyses performed and reported during the day.
+#' Be extra careful with interpretations!
+#+
+daytime <- function(x) {
+  s <- as.character(second(x))
+  if (nchar(s) == 1) {
+    s <- paste0(s, s)
+  }
+  paste0(hour(x), ":", minute(x), ":", s) %>% 
+    hms::parse_hms()
+}
+
+processing <- est %>% 
+  mutate(result_to_insert = interval(ResultTime, AnalysisInsertTime) / dhours(1),
+         result_time = daytime(ResultTime),
+         insert_time = daytime(AnalysisInsertTime)) %>% 
+  select(id, result_wk, result_to_insert, result_time, insert_time)
+
+#' Results timestamps during day.
+#+
+processing %>% 
+  ggplot() +
+  geom_histogram(aes(x = result_time, y = ..count.. / sum(..count..)), bins = 24) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Result time", y = "Percent cases")
+
+#' Result insertion to database timestamps during day.
+#+
+processing %>% 
+  ggplot() +
+  geom_histogram(aes(x = insert_time, y = ..count.. / sum(..count..)), bins = 24) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Result insertion time", y = "Percent cases")
+
+#' Time from test result to database insert.
+#+
+processing %>% 
+  ggplot() +
+  geom_histogram(aes(x = result_to_insert, y = ..count.. / sum(..count..)), bins = 24) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_x_log10(labels = formatC) +
+  labs(x = "Time from test result to database insert, hours", 
+       y = "Percent cases")
+
+#' Test results processing times.
+#+
+processing %>% 
+  group_by(result_wk) %>% 
+  summarise_at("result_to_insert", list(median = median, n = length)) %>% 
+  ggplot() +
+  geom_point(aes(result_wk, median, size = log10(n))) +
+  scale_y_log10() +
+  scale_x_continuous(breaks = scales::pretty_breaks()) +
+  labs(x = "Week of the 2020", 
+       y = "Median time from\ntest result to database insert, hours",
+       size = "Number of tests\nper week, log10")
+
+
+
 
