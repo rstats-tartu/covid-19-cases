@@ -5,7 +5,7 @@ Readme](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20
 # COVID-19 cases and deaths
 
 rstats-tartu  
-last update: 2020-04-12 13:07:26
+last update: 2020-04-12 15:27:06
 
 ## Dataset
 
@@ -52,9 +52,9 @@ covid_cum <- covid_by_country %>%
   ungroup()
 ```
 
-## Cases and deaths in real time
+## Worldwide cases and deaths
 
-Covid-19 cases.
+COVID-19 cases worldwide.
 
 ``` r
 covid_cum %>% 
@@ -69,7 +69,7 @@ covid_cum %>%
 
 ![](README_files/figure-gfm/plot-cases-dates-1.png)<!-- -->
 
-Covid-19 deaths.
+COVID-19 deaths worldwide.
 
 ``` r
 covid_cum %>% 
@@ -146,3 +146,134 @@ covid_cum %>%
 ```
 
 ![](README_files/figure-gfm/plot-risk-lag-1.png)<!-- -->
+
+Cases in Estonia
+
+``` r
+est <- read_csv(here("data/opendata_covid19_test_results.csv"))
+est <- est %>% 
+  mutate(result_wk = isoweek(ResultTime),
+         ResultDate = date(ResultTime))
+```
+
+Number of cases per week.
+
+``` r
+est %>% 
+  count(result_wk, ResultValue) %>% 
+  mutate(ResultValue = case_when(
+    ResultValue == "N" ~ "Negative",
+    ResultValue == "P" ~ "Positive"
+  )) %>% 
+  ggplot() +
+  geom_col(aes(result_wk, n)) +
+  facet_wrap(~ ResultValue, scales = "free_y") +
+  scale_x_continuous(breaks = scales::pretty_breaks()) +
+  labs(x = "Week of the 2020",
+       y = "Number of tests")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+
+Percent of positive cases per week.
+
+``` r
+est %>% 
+  count(result_wk, ResultValue) %>% 
+  pivot_wider(names_from = ResultValue, values_from = n) %>% 
+  mutate(tests = N + P,
+         pp = P / tests) %>% 
+  na.omit() %>% 
+  ggplot() +
+  geom_point(aes(result_wk, pp, size = tests)) +
+  scale_y_continuous(labels = scales::percent)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+
+When are the analyses performed and reported during the day. Be extra
+careful with interpretations\!
+
+``` r
+daytime <- function(x) {
+  s <- as.character(second(x))
+  if (nchar(s) == 1) {
+    s <- paste0(s, s)
+  }
+  paste0(hour(x), ":", minute(x), ":", s) %>% 
+    hms::parse_hms()
+}
+
+processing <- est %>% 
+  mutate(result_to_insert = interval(ResultTime, AnalysisInsertTime) / dhours(1),
+         result_time = daytime(ResultTime),
+         insert_time = daytime(AnalysisInsertTime)) %>% 
+  select(id, result_wk, result_to_insert, result_time, insert_time)
+```
+
+    ## Warning in if (nchar(s) == 1) {: the condition has length > 1 and only the first
+    ## element will be used
+    
+    ## Warning in if (nchar(s) == 1) {: the condition has length > 1 and only the first
+    ## element will be used
+
+Results timestamps during day.
+
+``` r
+processing %>% 
+  ggplot() +
+  geom_histogram(aes(x = result_time, y = ..count.. / sum(..count..)), bins = 24) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Result time", y = "Percent cases")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+
+Result insertion to database timestamps during day.
+
+``` r
+processing %>% 
+  ggplot() +
+  geom_histogram(aes(x = insert_time, y = ..count.. / sum(..count..)), bins = 24) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Result insertion time", y = "Percent cases")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+
+Time from test result to database insert.
+
+``` r
+processing %>% 
+  ggplot() +
+  geom_histogram(aes(x = result_to_insert, y = ..count.. / sum(..count..)), bins = 24) +
+  scale_y_continuous(labels = scales::percent) +
+  scale_x_log10(labels = formatC) +
+  labs(x = "Time from test result to database insert, hours", 
+       y = "Percent cases")
+```
+
+    ## Warning in self$trans$transform(x): NaNs produced
+
+    ## Warning: Transformation introduced infinite values in continuous x-axis
+
+    ## Warning: Removed 3 rows containing non-finite values (stat_bin).
+
+![](README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+
+Test results processing times.
+
+``` r
+processing %>% 
+  group_by(result_wk) %>% 
+  summarise_at("result_to_insert", list(median = median, n = length)) %>% 
+  ggplot() +
+  geom_point(aes(result_wk, median, size = log10(n))) +
+  scale_y_log10() +
+  scale_x_continuous(breaks = scales::pretty_breaks()) +
+  labs(x = "Week of the 2020", 
+       y = "Median time from\ntest result to database insert, hours",
+       size = "Number of tests\nper week, log10")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
