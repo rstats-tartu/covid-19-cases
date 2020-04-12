@@ -29,7 +29,7 @@ old <- theme_set(ggthemes::theme_tufte())
 
 
 ```{r}
-df1 <- read_csv("data/country_data.csv") %>% 
+df1 <- read_csv(here("data/country_data.csv")) %>% 
   unique() %>% 
   filter(country != "Diamond Princess") %>% 
   mutate_at("country", ~gsub("[ ,]+", "_", .x)) %>% 
@@ -160,7 +160,7 @@ covidx <- left_join(covidx, country_table)
 ## A small crosswalk file that we'll coalesce into the missing values
 ## We need to specify the na explicity because the xwalk file has Namibia
 ## as a country -- i.e. country code = string literal "NA"
-country_xwalk <- read_csv("data/ecdc_to_iso2_xwalk.csv",
+country_xwalk <- read_csv(here("data/ecdc_to_iso2_xwalk.csv"),
                         na = "")
 
 covidx <- coalesce_join(covidx, country_xwalk, 
@@ -721,7 +721,7 @@ ggplot(cov_case_curve %>% filter(date> "2020-03-05",
 
 
 ```{r}
-est <- read_csv("data/opendata_covid19_test_results.csv")
+est <- read_csv(here("data/opendata_covid19_test_results.csv"))
 est <- est %>% mutate(Result = case_when(
   ResultValue=="N" ~ 0,
   TRUE ~ 1
