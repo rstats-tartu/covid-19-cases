@@ -10,11 +10,47 @@
 #' rstats-tartu    
 #' last update: `r Sys.time()`
 #' 
+#' ## Contents
+#' 
+#' 
+#' [Dataset](#dataset)    
+#' [Worldwide cases and deaths](#worldwide-cases-and-deaths)     
+#' [Cases and deaths on relative time scale](#cases-and-deaths-on-relative-time-scale)     
+#' [Risk of death](#risk-of-death)      
+#' [COVID-19 cases in Estonia](#covid-19-cases-in-estonia)    
+#' [Estonian COVID-19 tests handling](#estonian-covid-19-tests-handling)   
+#' 
+#' 
+#' 
+#' ## Intro
+#' 
+#' Small selection of graphs illustrating daily developments in COVID-19 epidemic.
+#' Code is shown on purpose, in case you want to recreate these plots.
+#' 
+#' 
+#' **Phylogenetic- and geographic distribution of SARS-CoV-2**, COVID-19 causing virus, 
+#' is available on <https://auspice.credibleinterval.ee/sarscov2>.
+#'
+#' SARS-Cov-2 phylogenetic tree is based solely on sequences published on NCBI <https://www.ncbi.nlm.nih.gov/genbank/sars-cov-2-seqs/>
+#' 
 #' ## Dataset
 #' 
-#' Daily COVID-19 data is from [European Centre for Disease Prevention 
+#' Daily COVID-19 worldwide data is from [European Centre for Disease Prevention 
 #' and Control](https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide).
-#'
+#' 
+#' Estonian COVID-19 dataset was downloaded from Estonian Healthboard <https://opendata.digilugu.ee/opendata_covid19_test_results.csv>
+#' 
+#' Datasets were downloaded using [script/get_data.R](script/get_data.R) script and saved to `data` folder.
+#' 
+#' 
+#' Report was rendered using `rmarkdown::render()` command. To render, you can run 
+#' following command from shell:
+#' 
+#' ```bash
+#' Rscript -e "rmarkdown::render('scripts/main.R', output_format = rmarkdown::github_document(), output_file = 'README.md')"
+#' ```
+#' 
+#' 
 #+ chunk_opts, include=FALSE
 knitr::opts_chunk$set(message = FALSE, warning = FALSE)
 
@@ -127,7 +163,8 @@ covid_cum %>%
        y = "Risk of death",
        caption = "Each line represents one country")
 
-#' Cases in Estonia
+#' ## COVID-19 cases in Estonia
+#' 
 #+
 est <- read_csv(here("data/opendata_covid19_test_results.csv"))
 est <- est %>% 
@@ -164,6 +201,12 @@ est %>%
        y = "Positive tests, %")
 
 
+#' ## Estonian COVID-19 tests handling 
+#' 
+#' We are looking at the test result reporting and publishing timestamps 
+#' by Estonian Healthboard.
+#' 
+#' 
 #' When are the analyses performed and reported during the day.
 #' Be extra careful with interpretations!
 #+
@@ -190,22 +233,22 @@ processing %>%
   scale_y_continuous(labels = scales::percent) +
   labs(x = "Result time", y = "Percent cases")
 
-#' Result insertion to database timestamps during day.
+#' Timestamps of result insertion to database.
 #+
 processing %>% 
   ggplot() +
   geom_histogram(aes(x = insert_time, y = ..count.. / sum(..count..)), bins = 24) +
   scale_y_continuous(labels = scales::percent) +
-  labs(x = "Result insertion time", y = "Percent cases")
+  labs(x = "Result database insertion time", y = "Percent cases")
 
-#' Time from test result to database insert.
+#' Time from test result to database insertion.
 #+
 processing %>% 
   ggplot() +
   geom_histogram(aes(x = result_to_insert, y = ..count.. / sum(..count..)), bins = 24) +
   scale_y_continuous(labels = scales::percent) +
   scale_x_log10(labels = formatC) +
-  labs(x = "Time from test result to database insert, hours", 
+  labs(x = "Timespan from test result to database insertion, hours", 
        y = "Percent cases")
 
 #' Test results processing times.
@@ -218,5 +261,5 @@ processing %>%
   scale_y_log10() +
   scale_x_continuous(breaks = scales::pretty_breaks()) +
   labs(x = "Week of the 2020", 
-       y = "Median time from\ntest result to database insert, hours",
+       y = "Median timespan from\ntest result to database insertion, hours",
        size = "Number of tests\nper week, log10")
