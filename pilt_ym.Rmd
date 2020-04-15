@@ -667,7 +667,7 @@ ggplot(cov_case_curve %>% filter(date> "2020-03-05",
                                      "Sweden",
                                      "Georgia",
                                      "Norway",
-                                     "Denmark")), 
+                                     "Denmark", "Iceland")), 
        aes(date, cu_deaths, color=country))+
   geom_line()+
   geom_dl(aes(label = iso3), method = list(dl.combine("last.points"), cex = 0.8))+
@@ -685,7 +685,7 @@ ggplot(cov_case_curve %>% filter(date> "2020-03-05",
                                      "Sweden",
                                      "Georgia",
                                      "Norway",
-                                     "Denmark")), 
+                                     "Denmark", "Iceland")), 
        aes(date, cases_per_100000, color=country))+
   geom_line()+
   geom_dl(aes(label = iso3), method = list(dl.combine("last.points"), cex = 0.8))+
@@ -704,7 +704,7 @@ ggplot(cov_case_curve %>% filter(date> "2020-03-05",
                                      "Sweden",
                                      "Georgia",
                                      "Norway",
-                                     "Denmark")), 
+                                     "Denmark", "Iceland")), 
        aes(date, deaths_per_100000, color=country))+
   geom_line()+
   geom_dl(aes(label = iso3), method = list(dl.combine("last.points"), cex = 0.8))+
