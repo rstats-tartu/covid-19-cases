@@ -10,8 +10,7 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 
 
 ```{r}
-library("dplyr")
-library("ggplot2")
+library("tidyverse")
 library("tidyr")
 library("readr")
 library("directlabels")
@@ -21,6 +20,7 @@ library("zoo")
 library("lubridate")
 library("here")
 library("glue")
+library(brms)
 old <- theme_set(ggthemes::theme_tufte())
 
 ```
@@ -154,6 +154,11 @@ covidx <- covid_raw %>%
   mutate(date = lubridate::dmy(date_rep),
          iso2 = geo_id)
 
+#covidx <- read_csv("data/ecdc-cumulative-2020-04-09.csv") %>%
+ # mutate(date = lubridate::dmy(dateRep),
+  #       iso2 = geoId)
+#covidx <- covidx %>% rename(geo_id = geoId, date_rep = dateRep)
+
 ## merge in the iso country names
 covidx <- left_join(covidx, country_table)
 
@@ -206,7 +211,9 @@ cov_case_curve <- cov_case_curve %>%
          lag_cases_7 = dplyr::lag(cu_cases, n=7),
          risk_7=cu_deaths/lag_cases_7,
          smoothed_cases = zoo::rollmean(cases, k=3, fill=NA),
-         smoothed_deaths =zoo::rollmean(deaths, k=3, fill=NA))
+         smoothed_deaths =zoo::rollmean(deaths, k=3, fill=NA),
+         days = ymd(date) - today(),
+         log_cu_cases= log2(cu_cases))
 
 #cov_case_curve_full <- cov_case_curve
 #cov_case_curve <- cov_case_curve %>% filter(cu_cases > 99)
@@ -515,7 +522,7 @@ cov_case_curve %>% group_by(country) %>% filter(max(cu_cases)>1000) %>%
   labs(x = "Days since first case in each country", 
        y = "Cumulative number of cases")+
   theme(legend.position = "none", axis.title.x = element_blank()) +
-  xlim(0, 40)
+  xlim(0, 60)
 ```
 
 Alla 100 kumulatiivse haigusjuhu on eemaldatud, et jooni paremini kohakuti saada.
@@ -542,22 +549,7 @@ cov_case_curve %>% filter(max(cu_deaths)>100) %>%
   labs(x = "Days since first case in each country", 
        y = "Cumulative deaths")+
   theme(legend.position = "none", axis.title.x = element_blank()) +
-  xlim(0, 40)
-```
-
-
-
-
-```{r eval=FALSE}
-#taavi kood
-covid_cum2 %>% 
-  ggplot(aes(tp, cum_deaths)) +
-  geom_line(aes(color = country)) +
-  geom_dl(aes(label = geoid), method = list("last.points", cex = 0.8)) +
-  scale_y_log10() +
-  labs(x = "Days since first death in each country", 
-       y = "Cumulative number of deaths")+
-  theme(legend.position = "none")
+  xlim(0, 60)
 ```
 
 
@@ -628,12 +620,14 @@ cov_case_curve %>% filter(date> "2020-03-05",
                                    country == "Norway"|
                                    country == "Sweden"|
                                    country == "Finland"|
-                                   country == "Estonia") %>% 
+                                   country == "Estonia" |
+                            country == "France" |
+                            country == "Iceland", days_elapsed> 19) %>% 
   ggplot(aes(days_elapsed, risk_7)) +
   geom_line(aes(color = country)) +
   geom_dl(aes(label = iso3), method = list("last.points", cex = 0.8)) +
   scale_y_log10() +
-  labs(x = "Time, days from first case", 
+  labs(x = "Days from first case", 
        y = "Risk of death")+
    theme(legend.position = "none")
 ```
@@ -717,6 +711,25 @@ ggplot(cov_case_curve %>% filter(date> "2020-03-05",
   theme(legend.position = "none", axis.title.x = element_blank())
 ```
 
+# mudeldamine eesti ja teised, riigi tasemel
+
+## viiruse kahekordistumisaeg saadud log2 skaalas kumulatiivse nakatumise tõusunurgast
+```{r }
+data <- cov_case_curve %>% filter(days> -10, days < -0) %>% filter(iso3 %in% c("USA", "FRA", "GBR", "NOR", "ITA", "ESP", "EST", "FIN", "DEU", "BEL", "SWE", "TUR"))
+m0 <- data %>% split(.$iso3) %>% map(~ lm(log_cu_cases ~ days, data = .)) %>%
+map(summary) %>% map_dfr(~ broom::tidy(.), .id = "country")
+m0 <- m0 %>% filter(term=="days") %>% mutate(mean_days = 1/estimate) %>% select(country, estimate, mean_days, everything())
+ggplot(m0, aes(fct_reorder(country, mean_days), mean_days)) + geom_point()+ coord_flip()+ theme_bw()+ xlab(NULL)
+```
+```{r}
+ggplot(data, aes(days, log_cu_cases, color=iso3)) + geom_point() + geom_smooth(method = lm)+ theme_classic()
+```
+
+R=1 jääb siin kuhugi 10-12 päeva vahele usutavasti. Riikides, kus viiruse topeldamiseks üle 12 päeva, võib kergemalt hinnata. Norras on see kuskil 12 ja Norrakad ise hindavad oma R=0.7 samal ajal. Eesti 10 päeva viitab, et R on enam-vähem 1.
+
+
+
+
 # 3. Eesti
 
 
@@ -766,7 +779,7 @@ est_summary_2 <- est_summary <- est %>%
   mutate(cu_cases= cumsum(cases), 
          cu_negatives= cumsum(negatives),
          cu_tested= cumsum(tested),
-         cu_frac = cummean(frac))
+         cu_frac= cu_cases/cu_tested)
 
 est_summary_3 <- est %>% group_by(resultsdate, County) %>% 
   summarise(cases= sum(Result), 
@@ -781,7 +794,9 @@ est_summary_3 <- est %>% group_by(resultsdate, County) %>%
          cu_frac = cummean(frac),
          smoothed_frac = zoo::rollmean(frac, k=3, fill=NA),
          lag_cases = lag(cu_cases, 8),
-         active_cases = cu_cases - lag_cases)
+         active_cases = cu_cases - lag_cases,
+         log_cu_cases= log2(cu_cases),
+         days = ymd(resultsdate) - today())
 
 est_summary_4 <- est %>% group_by(resultsdate) %>% 
   summarise(cases= sum(Result), 
@@ -793,7 +808,8 @@ est_summary_4 <- est %>% group_by(resultsdate) %>%
          cu_negatives= cumsum(negatives),
          cu_tested= cumsum(tested),
          cu_frac = cummean(frac),
-         smoothed_cases = zoo::rollmean(cases, k=3, fill=NA))
+         smoothed_cases = zoo::rollmean(cases, k=3, fill=NA),
+         log_cu_cases= log2(cu_cases))
 ```
 
 ## uued nakatumised värvitud maakonna kaupa
@@ -845,15 +861,8 @@ aes(resultsdate, active_cases, color=County)) + geom_line()+
   theme(legend.position = "none", axis.title.x = element_blank())
 ```
 
-## positiivsete testide osakaal kumulatiivse keskmisena
 
-```{r}
-ggplot(est_summary_3 %>% filter(resultsdate > "2020-03-26"), aes(resultsdate, cu_frac, color=County)) + geom_line()+  
-  geom_dl(aes(label = County), method = list("last.points", cex = 0.8)) +
-  theme(legend.position = "none", axis.title.x = element_blank())
-```
-
-## sama liikuva keskmisega silutud
+## positiivsete testide osakaal
 ```{r}
 ggplot(est_summary_3 %>% filter(resultsdate > "2020-03-26", 
                                 County %in% c("Saaremaa", 
@@ -865,3 +874,84 @@ ggplot(est_summary_3 %>% filter(resultsdate > "2020-03-26",
   geom_dl(aes(label = County), method = list("last.points", cex = 0.8)) +
   theme(legend.position = "none", axis.title.x = element_blank())
 ```
+
+smoothed_frac = cases/tested igale päevale eraldi, silutud liikuva keskmisega.
+
+```{r}
+ggplot(est_summary_3 %>% filter(resultsdate > "2020-03-15", 
+                                County %in% c("Saaremaa", 
+                                              "Võru", 
+                                              "Harju", 
+                                              "Tartu")), 
+       aes(resultsdate, cu_frac, color=County)) + 
+  geom_line()+  
+  geom_dl(aes(label = County), method = list("last.points", cex = 0.8)) +
+  theme(legend.position = "none", axis.title.x = element_blank())
+```
+
+cu_frac = cu_cases/cu_tested
+
+## nakatumiste tõusunurk log2 skaalas.
+
+1 ühik = 2-kordne nakatunute arvu kumulatiivne tõus.
+```{r }
+df_brm <- est_summary_3 %>% filter(log_cu_cases >= 0, days >= -12, days< -2)
+df_brm$days <- as.numeric(df_brm$days)
+```
+
+```{r}
+ggplot(df_brm, aes(days, log_cu_cases)) + geom_point() + geom_smooth(method = lm)+
+  facet_wrap(~County)
+```
+
+
+
+## mudeldamine viimase kümne päeva põhjal
+
+2-tasemeline shrinkage mudel log_cu_cases~days + (days|County)
+
+```{r }
+m1 <- read_rds("models/m1.fit")
+m1 <- update(m1, newdata= df_brm, cores = 3, chains = 3)
+#write_rds(m1, "models/m1.fit")
+conditions <- data.frame(County=unique(df_brm$County), row.names=unique(df_brm$County))
+conditional_effects(m1, conditions= conditions, re_formula=NULL)
+```
+
+### nakkuse kahekordistumise aeg (päeva) 
+
+mean_days = 1/median(slope) posteeriorist
+high_days ja low_days on 90% CI posteeriorist.
+```{r }
+m1_p <- posterior_samples(m1)
+m1_p_slope <- m1_p[,2] + m1_p[,23:37] #%>% reshape2::melt() 
+
+names <- colnames(m1_p[,23:37]) %>%  str_replace_all("r_County\\[", "") %>% str_replace_all(",days\\]", "")
+colnames(m1_p_slope) <- names
+Mean <- apply(m1_p_slope, 2, median)
+low <- apply(m1_p_slope, 2, quantile, 0.05)
+high <- apply(m1_p_slope, 2, quantile, 0.95)
+
+df <- tibble(Mean = Mean, low= low, high=high)
+df$names <- names
+df$low[df$low<0] <- 0.015
+df <- df %>% mutate(mean_days= 1/Mean, high_days=1/low, low_days=1/high)
+
+kableExtra::kable(df %>% mutate_if(is.numeric, round, 2))
+```
+
+
+
+```{r}
+ggplot(df, aes(fct_reorder(names, mean_days), mean_days)) + geom_point()+coord_flip()+ xlab(NULL)+ theme_bw()+
+  ylim(0, 50)
+```
+
+
+```{r }
+ggplot(df, aes(fct_reorder(names, mean_days), mean_days)) + geom_pointrange(aes(ymin=low_days, ymax=high_days))+ xlab(NULL)+ theme_bw()+
+  coord_cartesian(ylim=c(0,50))
+```
+
+
+
