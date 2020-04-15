@@ -67,7 +67,7 @@ get_ecdc_csv <- function(url = "https://opendata.ecdc.europa.eu/covid19/casedist
   
   tf <- tempfile(fileext = ext)
   curl::curl_download(target, tf)
-  fs::file_copy(tf, destination)
+  fs::file_copy(tf, destination, overwrite = TRUE)
   
   janitor::clean_names(readr::read_csv(tf))
 }                          
