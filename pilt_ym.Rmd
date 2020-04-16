@@ -20,7 +20,9 @@ library("zoo")
 library("lubridate")
 library("here")
 library("glue")
-library(brms)
+library("brms")
+library("kableExtra")
+library("broom")
 old <- theme_set(ggthemes::theme_tufte())
 
 ```

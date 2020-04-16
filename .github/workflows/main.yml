@@ -42,7 +42,7 @@ jobs:
         uses: actions/checkout@master
       - name: Install Package Dependencies
         run: |-
-          Rscript -e "install.packages(c('tidyverse','directlabels','jcolors','ggthemes','zoo','lubridate','here','glue','janitor','fs', 'brms'), repos = 'https://demo.rstudiopm.com/all/__linux__/bionic/latest')"
+          Rscript -e "install.packages(c('tidyverse','directlabels','jcolors','ggthemes','zoo','lubridate','here','glue','janitor','fs', 'brms', 'kableExtra', 'broom'), repos = 'https://demo.rstudiopm.com/all/__linux__/bionic/latest')"
       - name: Render index
         run: |-
           Rscript -e "rmarkdown::render('pilt_ym.Rmd', output_format = bookdown::html_document2(), output_file = 'index.html')"
