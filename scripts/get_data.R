@@ -11,10 +11,10 @@ if (!inherits(resp, "try-error")) {
   raw <- read_csv(temp)
   # Check if colnames match
   stopifnot(
-    all.equal(
+    all(
       c("dateRep", "day", "month", "year", "cases", "deaths", 
               "countriesAndTerritories", "geoId", 
-              "countryterritoryCode", "popData2018"), 
+              "countryterritoryCode", "popData2018") %in%
       colnames(raw))
     )
   proc <- raw %>% 
