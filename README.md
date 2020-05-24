@@ -5,7 +5,7 @@ Readme](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20
 # COVID-19 cases and deaths
 
 rstats-tartu  
-last update: 2020-05-24 13:12:22
+last update: 2020-05-24 16:00:03
 
 ## Contents
 
@@ -92,17 +92,73 @@ covid_cum <- covid_by_country %>%
 
 ## Worldwide cases and deaths
 
-COVID-19 cases worldwide.
+``` r
+cumulative <- covid_by_country %>% 
+  group_by(daterep) %>% 
+  summarise_at(c("cases", "deaths"), sum) %>% 
+  mutate_at(c("cases", "deaths"), list(cum = cumsum))
+
+
+cumlong <- cumulative %>% 
+  pivot_longer(cases:deaths_cum)
+cumlong %>% 
+  group_by(name) %>% 
+  summarise_at("value", max) %>% 
+  filter(name %in% c("cases_cum", "deaths_cum"))
+```
+
+    ## # A tibble: 2 x 2
+    ##   name         value
+    ##   <chr>        <dbl>
+    ## 1 cases_cum  5079224
+    ## 2 deaths_cum  341510
 
 ``` r
-covid_cum %>% 
-  ggplot(aes(daterep, cum_cases, group = country)) +
+cumlong %>% 
+  filter(name %in% c("cases_cum", "deaths_cum")) %>% 
+  ggplot(aes(daterep, value, linetype = name)) +
   geom_line() +
-  geom_dl(aes(label = geoid), method = list("first.points", cex = 0.8)) +
-  scale_y_log10() +
+  geom_dl(data = cumlong %>% 
+            group_by(name) %>% 
+            filter(name %in% c("cases_cum", "deaths_cum"), value == max(value)), 
+          aes(label = prettyNum(value, big.mark = ",")), 
+          method = list("last.points", hjust = 1.05, vjust = -0.3)) +
   labs(x = "Date", 
+       y = "Number of cases or deaths",
+       title = "Global cases and deaths") +
+  scale_y_continuous(limits = c(0, 2e6)) +
+  scale_linetype_discrete(labels = c("Cases", "Deaths")) +
+  theme(legend.title = element_blank(),
+        legend.position = "bottom")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+
+COVID-19 cases worldwide by country.
+
+``` r
+top_10_cases <- covid_cum %>% 
+  group_by(country) %>% 
+  summarise_at("cum_cases", max) %>% 
+  top_n(10, cum_cases) %>% 
+  pull(country)
+top_10_deaths <- covid_cum %>% 
+  group_by(country) %>% 
+  summarise_at("cum_deaths", max) %>% 
+  top_n(10, cum_deaths) %>% 
+  pull(country)
+
+covid_cum %>% 
+  ggplot(aes(daterep, cum_cases)) +
+  geom_line(aes(group = country, color = country %in% top_10_cases)) +
+  geom_dl(aes(label = geoid, color = country %in% top_10_cases), method = list("last.points", cex = 0.8)) +
+  scale_y_log10() +
+  scale_color_manual(values = c("gray", "black")) +
+  theme(legend.position = "none") +
+  labs(title = "Cases", 
+       x = "Date", 
        y = "Cumulative number of cases",
-       caption = "Each line represents one country")
+       caption = "Each line represents one country.\nTop 10 is shown in black.")
 ```
 
 ![](README_files/figure-gfm/plot-cases-dates-1.png)<!-- -->
@@ -111,13 +167,16 @@ COVID-19 deaths worldwide.
 
 ``` r
 covid_cum %>% 
-  ggplot(aes(daterep, cum_deaths, group = country)) +
-  geom_line() +
-  geom_dl(aes(label = geoid), method = list("first.points", cex = 0.8)) +
+  ggplot(aes(daterep, cum_deaths)) +
+  geom_line(aes(group = country, color = country %in% top_10_deaths)) +
+  geom_dl(aes(label = geoid, color = country %in% top_10_deaths), method = list("last.points", cex = 0.8)) +
   scale_y_log10() +
-  labs(x = "Date", 
+  scale_color_manual(values = c("gray", "black")) +
+  theme(legend.position = "none") +
+  labs(title = "Deaths", 
+       x = "Date", 
        y = "Cumulative number of deaths",
-       caption = "Each line represents one country")
+       caption = "Each line represents one country.\nTop 10 is shown in black.")
 ```
 
 ![](README_files/figure-gfm/plot-deaths-dates-1.png)<!-- -->
@@ -128,13 +187,15 @@ Number of cases per country.
 
 ``` r
 covid_cum %>% 
-  ggplot(aes(tp, cum_cases, group = country)) +
-  geom_line() +
-  geom_dl(aes(label = geoid), method = list("last.points", cex = 0.8)) +
+  ggplot(aes(tp, cum_cases)) +
+  geom_line(aes(group = country, color = country %in% top_10_cases)) +
+  geom_dl(aes(label = geoid, color = country %in% top_10_cases), method = list("last.points", cex = 0.8)) +
   scale_y_log10() +
+  scale_color_manual(values = c("gray", "black")) +
+  theme(legend.position = "none") +
   labs(x = "Days since first case in each country", 
        y = "Cumulative number of cases",
-       caption = "Each line represents one country")
+       caption = "Each line represents one country.\nTop 10 is shown in black.")
 ```
 
 ![](README_files/figure-gfm/plot-cases-1.png)<!-- -->
@@ -144,12 +205,14 @@ Number of deaths per country.
 ``` r
 covid_cum %>% 
   ggplot(aes(tp, cum_deaths)) +
-  geom_line(aes(group = country)) +
-  geom_dl(aes(label = geoid), method = list("last.points", cex = 0.8)) +
+  geom_line(aes(group = country, color = country %in% top_10_deaths)) +
+  geom_dl(aes(label = geoid, color = country %in% top_10_deaths), method = list("last.points", cex = 0.8)) +
   scale_y_log10() +
+  scale_color_manual(values = c("gray", "black")) +
+  theme(legend.position = "none") +
   labs(x = "Days since first death in each country", 
        y = "Cumulative number of deaths",
-       caption = "Each line represents one country")
+       caption = "Each line represents one country.\nTop 10 is shown in black.")
 ```
 
 ![](README_files/figure-gfm/plot-deaths-1.png)<!-- -->
@@ -211,7 +274,7 @@ est %>%
        y = "Number of tests")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 Percent of positive cases per week.
 
@@ -229,7 +292,7 @@ est %>%
        y = "Positive tests, %")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 ## Estonian COVID-19 tests handling
 
@@ -266,7 +329,7 @@ processing %>%
   labs(x = "Result time", y = "Percent cases")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 Timestamps of result insertion to database.
 
@@ -278,7 +341,7 @@ processing %>%
   labs(x = "Result database insertion time", y = "Percent cases")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 Time from test result to database insertion.
 
@@ -292,7 +355,7 @@ processing %>%
        y = "Percent cases")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 Test results processing times.
 
@@ -309,4 +372,4 @@ processing %>%
        size = "Number of tests\nper week, log10")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
