@@ -5,7 +5,7 @@ Readme](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20
 # COVID-19 cases and deaths
 
 rstats-tartu  
-last update: 2020-05-24 16:00:03
+last update: 2020-05-24 16:20:36
 
 ## Contents
 
@@ -126,7 +126,7 @@ cumlong %>%
   labs(x = "Date", 
        y = "Number of cases or deaths",
        title = "Global cases and deaths") +
-  scale_y_continuous(limits = c(0, 2e6)) +
+  scale_y_continuous(limits = c(0, max(cumlong$value) * 1.2)) +
   scale_linetype_discrete(labels = c("Cases", "Deaths")) +
   theme(legend.title = element_blank(),
         legend.position = "bottom")
