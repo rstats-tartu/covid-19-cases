@@ -5,7 +5,7 @@ Readme](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20
 # COVID-19 cases and deaths
 
 rstats-tartu  
-last update: 2020-06-16 21:12:23
+last update: 2020-06-17 09:15:16
 
 ## Contents
 
@@ -43,8 +43,7 @@ Datasets were downloaded using [script/get\_data.R](script/get_data.R)
 script and saved to `data` folder.
 
 Report was rendered using `rmarkdown::render()` command. To render, you
-can run following command from
-shell:
+can run following command from shell:
 
 ``` bash
 Rscript -e "rmarkdown::render('scripts/main.R', output_format = rmarkdown::github_document(), output_file = 'README.md')"
@@ -52,8 +51,7 @@ Rscript -e "rmarkdown::render('scripts/main.R', output_format = rmarkdown::githu
 
 ## Setting up data
 
-Loading
-libraries.
+Loading libraries.
 
 ``` r
 pkg <- c("dplyr", "tidyr", "readr", "lubridate", "here", "ggplot2", "directlabels")
