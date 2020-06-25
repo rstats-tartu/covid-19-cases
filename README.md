@@ -5,7 +5,7 @@ Readme](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20
 # COVID-19 cases and deaths
 
 rstats-tartu  
-last update: 2020-06-18 13:10:37
+last update: 2020-06-25 13:43:15
 
 ## Contents
 
@@ -72,7 +72,9 @@ covid_by_country <- covid %>%
   filter(cases != 0, deaths != 0) %>% 
   group_by(country) %>% 
   mutate(tp = interval(Sys.Date(), daterep) / ddays(1),
-         tp = tp - min(tp))
+         tp = tp - min(tp),
+         cases_100k = (cases / popdata) * 1e5,
+         deaths_100k = (deaths / popdata) * 1e5)
 ```
 
 Calculating number of cases and deaths per country. Keeping only
@@ -108,8 +110,8 @@ cumlong %>%
     ## # A tibble: 2 x 2
     ##   name         value
     ##   <chr>        <dbl>
-    ## 1 cases_cum  7877836
-    ## 2 deaths_cum  443231
+    ## 1 cases_cum  9112630
+    ## 2 deaths_cum  482169
 
 ``` r
 cumlong %>% 
@@ -124,7 +126,7 @@ cumlong %>%
   labs(x = "Date", 
        y = "Number of cases or deaths",
        title = "Global cases and deaths") +
-  scale_y_continuous(limits = c(0, max(cumlong$value) * 1.2)) +
+  scale_y_continuous(limits = c(0, max(cumlong$value) * 1.1)) +
   scale_linetype_discrete(labels = c("Cases", "Deaths")) +
   theme(legend.title = element_blank(),
         legend.position = "bottom")
