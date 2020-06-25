@@ -1,4 +1,4 @@
-pkg <- c("dplyr", "readr")
+pkg <- c("dplyr", "readr", "stringr")
 invisible(lapply(pkg, library, character.only = TRUE))
 
 
@@ -9,18 +9,20 @@ resp <- try(download.file(url, temp, method = "libcurl"), silent = TRUE)
 
 if (!inherits(resp, "try-error")) {
   raw <- read_csv(temp)
+  renamed <- 
   # Check if colnames match
-  stopifnot(
-    all(
-      c("dateRep", "day", "month", "year", "cases", "deaths", 
-              "countriesAndTerritories", "geoId", 
-              "countryterritoryCode", "popData2018") %in%
-      colnames(raw))
-    )
   proc <- raw %>% 
     rename_all(tolower) %>% 
     rename_all(~gsub("_", "", .x)) %>% 
+    rename_all(str_replace, "popdata\\d+", "popdata") %>% 
     rename(country = countriesandterritories)
+  stopifnot(
+    all(
+      c("daterep", "day", "month", "year", "cases", "deaths", 
+        "country", "geoid", 
+        "countryterritorycode", "popdata") %in%
+        colnames(proc))
+  )
   write_csv(proc, "data/COVID-19-geographic-distribution-worldwide.csv")
 }
 

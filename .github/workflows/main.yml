@@ -4,7 +4,7 @@ on:
     branches:
       - master
   schedule:
-    - cron:  "1 9,13,17,21 * * *"
+    - cron:  "1 21 * * *"
 jobs:
   readme:
     runs-on: ubuntu-latest
