@@ -59,7 +59,7 @@ knitr::opts_chunk$set(message = FALSE, warning = FALSE)
 #' 
 #' Loading libraries.
 #+ libs
-pkg <- c("dplyr", "tidyr", "readr", "lubridate", "here", "ggplot2", "directlabels")
+pkg <- c("dplyr", "tidyr", "readr", "lubridate", "here", "ggplot2", "directlabels", "tibbletime")
 invisible(lapply(pkg, library, character.only = TRUE))
 
 
@@ -228,7 +228,6 @@ est <- est %>%
 
 #' 14 day rolling number of cases. 
 #+
-library(tibbletime)
 rolling_sum <- rollify(sum, window = 14)
 est %>% 
   select(id, ResultDate, ResultValue) %>% 
