@@ -5,7 +5,7 @@ Readme](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20
 # COVID-19 cases and deaths
 
 rstats-tartu  
-last update: 2020-07-07 21:09:38
+last update: 2020-07-08 18:29:41
 
 ## Contents
 
@@ -54,7 +54,7 @@ Rscript -e "rmarkdown::render('scripts/main.R', output_format = rmarkdown::githu
 Loading libraries.
 
 ``` r
-pkg <- c("dplyr", "tidyr", "readr", "lubridate", "here", "ggplot2", "directlabels")
+pkg <- c("dplyr", "tidyr", "readr", "lubridate", "here", "ggplot2", "directlabels", "tibbletime")
 invisible(lapply(pkg, library, character.only = TRUE))
 ```
 
@@ -110,8 +110,8 @@ cumlong %>%
     ## # A tibble: 2 x 2
     ##   name          value
     ##   <chr>         <dbl>
-    ## 1 cases_cum  11237679
-    ## 2 deaths_cum   537293
+    ## 1 cases_cum  11448287
+    ## 2 deaths_cum   543494
 
 ``` r
 cumlong %>% 
@@ -257,20 +257,26 @@ est <- est %>%
          ResultDate = date(ResultTime))
 ```
 
-Number of cases per week.
+14 day rolling number of cases.
 
 ``` r
+rolling_sum <- rollify(sum, window = 14)
 est %>% 
-  count(result_wk, ResultValue) %>% 
+  select(id, ResultDate, ResultValue) %>% 
   mutate(ResultValue = case_when(
     ResultValue == "N" ~ "Negative",
     ResultValue == "P" ~ "Positive"
   )) %>% 
+  group_by(ResultValue) %>% 
+  complete(ResultDate = seq.Date(min(ResultDate), max(ResultDate), "day")) %>%
+  group_by(ResultValue, ResultDate) %>% 
+  summarise(n = sum(!is.na(id))) %>% 
+  mutate(n14 = rolling_sum(n)) %>% 
+  drop_na() %>% 
   ggplot() +
-  geom_col(aes(result_wk, n)) +
+  geom_col(aes(ResultDate, n14)) +
   facet_wrap(~ ResultValue, scales = "free_y") +
-  scale_x_continuous(breaks = scales::pretty_breaks()) +
-  labs(x = "Week of the 2020",
+  labs(x = "Date of the 2020",
        y = "Number of tests")
 ```
 
