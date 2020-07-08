@@ -226,19 +226,26 @@ est <- est %>%
   mutate(result_wk = isoweek(ResultTime),
          ResultDate = date(ResultTime))
 
-#' Number of cases per week.
+#' 14 day rolling number of cases. 
 #+
+library(tibbletime)
+rolling_sum <- rollify(sum, window = 14)
 est %>% 
-  count(result_wk, ResultValue) %>% 
+  select(id, ResultDate, ResultValue) %>% 
   mutate(ResultValue = case_when(
     ResultValue == "N" ~ "Negative",
     ResultValue == "P" ~ "Positive"
   )) %>% 
+  group_by(ResultValue) %>% 
+  complete(ResultDate = seq.Date(min(ResultDate), max(ResultDate), "day")) %>%
+  group_by(ResultValue, ResultDate) %>% 
+  summarise(n = sum(!is.na(id))) %>% 
+  mutate(n14 = rolling_sum(n)) %>% 
+  drop_na() %>% 
   ggplot() +
-  geom_col(aes(result_wk, n)) +
+  geom_col(aes(ResultDate, n14)) +
   facet_wrap(~ ResultValue, scales = "free_y") +
-  scale_x_continuous(breaks = scales::pretty_breaks()) +
-  labs(x = "Week of the 2020",
+  labs(x = "Date of the 2020",
        y = "Number of tests")
 
 #' Percent of positive cases per week.
