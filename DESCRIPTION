@@ -33,7 +33,8 @@ Imports:
     jcolors,
     zoo,
     ggthemes,
-    lubridate
+    lubridate,
+    tibbletime
 Suggests:
     
 VignetteBuilder:
