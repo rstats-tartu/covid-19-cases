@@ -59,9 +59,10 @@ knitr::opts_chunk$set(message = FALSE, warning = FALSE)
 #' 
 #' Loading libraries.
 #+ libs
-pkg <- c("dplyr", "tidyr", "readr", "lubridate", "here", "ggplot2", "directlabels", "tibbletime")
+pkg <- c("dplyr", "tidyr", "readr", "lubridate", "stringr", "here", "ggplot2", "directlabels", "tibbletime")
 invisible(lapply(pkg, library, character.only = TRUE))
-
+eu <- read_csv("https://datahub.io/opendatafortaxjustice/listofeucountries/r/listofeucountries.csv") %>% 
+  rename(country = x)
 
 #' Importing downloaded ECDC daily COVID-19 dataset. 
 #+ import
@@ -74,9 +75,8 @@ covid_by_country <- covid %>%
   filter(cases != 0, deaths != 0) %>% 
   group_by(country) %>% 
   mutate(tp = interval(Sys.Date(), daterep) / ddays(1),
-         tp = tp - min(tp),
-         cases_100k = (cases / popdata) * 1e5,
-         deaths_100k = (deaths / popdata) * 1e5)
+         tp = tp - min(tp)
+         )
 
 #' Calculating number of cases and deaths per country.
 #' Keeping only informative rows.
@@ -121,6 +121,7 @@ cumlong %>%
   scale_linetype_discrete(labels = c("Cases", "Deaths")) +
   theme(legend.title = element_blank(),
         legend.position = "bottom")
+
   
 #' 
 #' COVID-19 cases worldwide by country.
@@ -136,6 +137,7 @@ top_10_deaths <- covid_cum %>%
   summarise_at("cum_deaths", max) %>% 
   top_n(10, cum_deaths) %>% 
   pull(country)
+
 
 covid_cum %>% 
   ggplot(aes(daterep, cum_cases)) +
@@ -164,6 +166,7 @@ covid_cum %>%
        x = "Date", 
        y = "Cumulative number of deaths",
        caption = "Each line represents one country.\nTop 10 is shown in black.")
+
 
 #' ## Cases and deaths on relative time scale
 #' 
@@ -218,6 +221,56 @@ covid_cum %>%
        y = "Risk of death",
        caption = "Each line represents one country")
 
+#' Relative number of cases and deaths per 100,000 population
+#+
+rolling_sum <- rollify(sum, window = 14)
+#' Fill in missing dates to calculate 14-day rolling sum.
+rolling_sums <- covid_cum %>% 
+  group_by(country) %>% 
+  complete(daterep = seq.Date(min(daterep), max(daterep), "day"), 
+           fill = list(cases = 0, deaths = 0),
+           geoid, 
+           popdata) %>%
+  mutate(nobs = n()) %>% 
+  filter(nobs > 14) %>% 
+  mutate(cases14 = rolling_sum(cases),
+         deaths14 = rolling_sum(deaths),
+         cases14_100k = (cases14 / popdata) * 1e5,
+         deaths14_100k = (deaths14 / popdata) * 1e5) %>% 
+  select(country, daterep, geoid, popdata, ends_with("14"), ends_with("14_100k")) %>% 
+  
+  na.omit()
+  
+
+rolling_sums %>% 
+  filter(str_replace(country, "_", " ") %in% c(eu$country, "Norway", "Russia")) %>% 
+  ggplot(aes(daterep, cases14_100k)) +
+  geom_line(aes(group = country)) +
+  facet_wrap(~ country) +
+  labs(x = "Date", 
+       y = "14-day rolling cases\nper 100,000 population")
+
+
+rolling_sums %>% 
+  filter(str_replace(country, "_", " ") %in% c(eu$country, "Norway", "Russia")) %>% 
+  ggplot(aes(daterep, deaths14_100k)) +
+  geom_line(aes(group = country)) +
+  facet_wrap(~ country) +
+  labs(x = "Date", 
+       y = "14-day rolling deaths\nper 100,000 population")
+
+
+rolling_sums %>% 
+  filter(str_replace(country, "_", " ") %in% c(eu$country, "Norway", "Russia")) %>% 
+  mutate(risk = deaths14 / lag(cases14, 7)) %>% 
+  ggplot(aes(daterep, risk)) +
+  geom_line(aes(group = country)) +
+  facet_wrap(~ country) +
+  scale_y_log10()
+  labs(x = "Date", 
+       y = "Risk of death")
+
+
 #' ## COVID-19 cases in Estonia
 #' 
 #+
@@ -228,7 +281,6 @@ est <- est %>%
 
 #' 14 day rolling number of cases. 
 #+
-rolling_sum <- rollify(sum, window = 14)
 est %>% 
   select(id, ResultDate, ResultValue) %>% 
   mutate(ResultValue = case_when(
