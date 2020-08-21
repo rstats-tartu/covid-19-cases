@@ -5,7 +5,7 @@ Readme](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20
 # COVID-19 cases and deaths
 
 rstats-tartu  
-last update: 2020-08-20 21:17:54
+last update: 2020-08-21 09:56:51
 
 ## Contents
 
@@ -54,8 +54,10 @@ Rscript -e "rmarkdown::render('scripts/main.R', output_format = rmarkdown::githu
 Loading libraries.
 
 ``` r
-pkg <- c("dplyr", "tidyr", "readr", "lubridate", "here", "ggplot2", "directlabels", "tibbletime")
+pkg <- c("dplyr", "tidyr", "readr", "lubridate", "stringr", "here", "ggplot2", "directlabels", "tibbletime")
 invisible(lapply(pkg, library, character.only = TRUE))
+eu <- read_csv("https://datahub.io/opendatafortaxjustice/listofeucountries/r/listofeucountries.csv") %>% 
+  rename(country = x)
 ```
 
 Importing downloaded ECDC daily COVID-19 dataset.
@@ -72,9 +74,8 @@ covid_by_country <- covid %>%
   filter(cases != 0, deaths != 0) %>% 
   group_by(country) %>% 
   mutate(tp = interval(Sys.Date(), daterep) / ddays(1),
-         tp = tp - min(tp),
-         cases_100k = (cases / popdata) * 1e5,
-         deaths_100k = (deaths / popdata) * 1e5)
+         tp = tp - min(tp)
+         )
 ```
 
 Calculating number of cases and deaths per country. Keeping only
@@ -147,6 +148,7 @@ top_10_deaths <- covid_cum %>%
   summarise_at("cum_deaths", max) %>% 
   top_n(10, cum_deaths) %>% 
   pull(country)
+
 
 covid_cum %>% 
   ggplot(aes(daterep, cum_cases)) +
@@ -248,6 +250,81 @@ covid_cum %>%
 
 ![](README_files/figure-gfm/plot-risk-lag-1.png)<!-- -->
 
+Relative number of cases and deaths per 100,000 population
+
+``` r
+rolling_sum <- rollify(sum, window = 14)
+```
+
+Fill in missing dates to calculate 14-day rolling sum.
+
+``` r
+rolling_sums <- covid_cum %>% 
+  group_by(country) %>% 
+  complete(daterep = seq.Date(min(daterep), max(daterep), "day"), 
+           fill = list(cases = 0, deaths = 0),
+           geoid, 
+           popdata) %>%
+  mutate(nobs = n()) %>% 
+  filter(nobs > 14) %>% 
+  mutate(cases14 = rolling_sum(cases),
+         deaths14 = rolling_sum(deaths),
+         cases14_100k = (cases14 / popdata) * 1e5,
+         deaths14_100k = (deaths14 / popdata) * 1e5) %>% 
+  select(country, daterep, geoid, popdata, ends_with("14"), ends_with("14_100k")) %>% 
+  
+  na.omit()
+  
+
+rolling_sums %>% 
+  filter(str_replace(country, "_", " ") %in% c(eu$country, "Norway", "Russia")) %>% 
+  ggplot(aes(daterep, cases14_100k)) +
+  geom_line(aes(group = country)) +
+  facet_wrap(~ country) +
+  labs(x = "Date", 
+       y = "14-day rolling cases\nper 100,000 population")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+
+``` r
+rolling_sums %>% 
+  filter(str_replace(country, "_", " ") %in% c(eu$country, "Norway", "Russia")) %>% 
+  ggplot(aes(daterep, deaths14_100k)) +
+  geom_line(aes(group = country)) +
+  facet_wrap(~ country) +
+  labs(x = "Date", 
+       y = "14-day rolling deaths\nper 100,000 population")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-4-2.png)<!-- -->
+
+``` r
+rolling_sums %>% 
+  filter(str_replace(country, "_", " ") %in% c(eu$country, "Norway", "Russia")) %>% 
+  mutate(risk = deaths14 / lag(cases14, 7)) %>% 
+  ggplot(aes(daterep, risk)) +
+  geom_line(aes(group = country)) +
+  facet_wrap(~ country) +
+  scale_y_log10()
+```
+
+![](README_files/figure-gfm/unnamed-chunk-4-3.png)<!-- -->
+
+``` r
+  labs(x = "Date", 
+       y = "Risk of death")
+```
+
+    ## $x
+    ## [1] "Date"
+    ## 
+    ## $y
+    ## [1] "Risk of death"
+    ## 
+    ## attr(,"class")
+    ## [1] "labels"
+
 ## COVID-19 cases in Estonia
 
 ``` r
@@ -260,7 +337,6 @@ est <- est %>%
 14 day rolling number of cases.
 
 ``` r
-rolling_sum <- rollify(sum, window = 14)
 est %>% 
   select(id, ResultDate, ResultValue) %>% 
   mutate(ResultValue = case_when(
@@ -280,7 +356,7 @@ est %>%
        y = "Number of tests")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 Percent of positive cases per week.
 
@@ -298,7 +374,7 @@ est %>%
        y = "Positive tests, %")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 ## Estonian COVID-19 tests handling
 
@@ -335,7 +411,7 @@ processing %>%
   labs(x = "Result time", y = "Percent cases")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 Timestamps of result insertion to database.
 
@@ -347,7 +423,7 @@ processing %>%
   labs(x = "Result database insertion time", y = "Percent cases")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
 Time from test result to database insertion.
 
@@ -361,7 +437,7 @@ processing %>%
        y = "Percent cases")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 Test results processing times.
 
@@ -378,4 +454,4 @@ processing %>%
        size = "Number of tests\nper week, log10")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
