@@ -5,7 +5,7 @@ Readme](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20
 # COVID-19 cases and deaths
 
 rstats-tartu  
-last update: 2020-08-27 21:12:21
+last update: 2020-08-28 08:21:28
 
 ## Contents
 
@@ -280,7 +280,7 @@ rolling_sums %>%
   filter(str_replace(country, "_", " ") %in% c(eu$country, "Norway", "Russia")) %>% 
   ggplot(aes(daterep, cases14_100k)) +
   geom_line(aes(group = country)) +
-  facet_wrap(~ country) +
+  facet_wrap(~ country, scales = "free_y") +
   labs(x = "Date", 
        y = "14-day rolling cases\nper 100,000 population")
 ```
