@@ -5,7 +5,7 @@ Readme](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20
 # COVID-19 cases and deaths
 
 rstats-tartu  
-last update: 2020-08-31 21:13:08
+last update: 2020-09-01 08:56:00
 
 ## Contents
 
@@ -111,8 +111,8 @@ cumlong %>%
     ## # A tibble: 2 x 2
     ##   name          value
     ##   <chr>         <dbl>
-    ## 1 cases_cum  24654869
-    ## 2 deaths_cum   846264
+    ## 1 cases_cum  24906939
+    ## 2 deaths_cum   850324
 
 ``` r
 cumlong %>% 
@@ -329,15 +329,22 @@ rolling_sums %>%
 
 ``` r
 est <- read_csv(here("data/opendata_covid19_test_results.csv"))
+
 est <- est %>% 
   mutate(result_wk = isoweek(ResultTime),
          ResultDate = date(ResultTime))
 ```
 
+2020 aasta rahvaarv Statistikaameti andmebaasist.
+
+``` r
+rahvaarv <- 1328976
+```
+
 14 day rolling number of cases.
 
 ``` r
-est %>% 
+est_cov_sum <- est %>% 
   select(id, ResultDate, ResultValue) %>% 
   mutate(ResultValue = case_when(
     ResultValue == "N" ~ "Negative",
@@ -348,7 +355,9 @@ est %>%
   group_by(ResultValue, ResultDate) %>% 
   summarise(n = sum(!is.na(id))) %>% 
   mutate(n14 = rolling_sum(n)) %>% 
-  drop_na() %>% 
+  drop_na()
+
+est_cov_sum %>% 
   ggplot() +
   geom_col(aes(ResultDate, n14)) +
   facet_wrap(~ ResultValue, scales = "free_y") +
@@ -356,7 +365,22 @@ est %>%
        y = "Number of tests")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+
+``` r
+est_cov_sum_100k <- est_cov_sum %>% 
+  filter(ResultValue == "Positive") %>% 
+  mutate(n14_100k = (n14 / rahvaarv) * 100000)
+
+est_cov_sum_100k %>% 
+  ggplot(aes(ResultDate, n14_100k)) +
+  geom_line() +
+  geom_dl(label = prettyNum(est_cov_sum_100k$n14_100k[length(est_cov_sum_100k$n14_100k)], digits = 3), method = list("last.points", cex = 0.8)) +
+  labs(x = "Date of the 2020",
+       y = "14 day cases per 100'000 population")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-7-2.png)<!-- -->
 
 Percent of positive cases per week.
 
@@ -374,7 +398,7 @@ est %>%
        y = "Positive tests, %")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 ## Estonian COVID-19 tests handling
 
@@ -411,7 +435,7 @@ processing %>%
   labs(x = "Result time", y = "Percent cases")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
 Timestamps of result insertion to database.
 
@@ -423,7 +447,7 @@ processing %>%
   labs(x = "Result database insertion time", y = "Percent cases")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 Time from test result to database insertion.
 
@@ -437,7 +461,7 @@ processing %>%
        y = "Percent cases")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 Test results processing times.
 
@@ -454,4 +478,4 @@ processing %>%
        size = "Number of tests\nper week, log10")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
