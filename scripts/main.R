@@ -275,13 +275,18 @@ rolling_sums %>%
 #' 
 #+
 est <- read_csv(here("data/opendata_covid19_test_results.csv"))
+
 est <- est %>% 
   mutate(result_wk = isoweek(ResultTime),
          ResultDate = date(ResultTime))
 
+#' 2020 aasta rahvaarv Statistikaameti andmebaasist.
+#+
+rahvaarv <- 1328976
+
 #' 14 day rolling number of cases. 
 #+
-est %>% 
+est_cov_sum <- est %>% 
   select(id, ResultDate, ResultValue) %>% 
   mutate(ResultValue = case_when(
     ResultValue == "N" ~ "Negative",
@@ -292,12 +297,25 @@ est %>%
   group_by(ResultValue, ResultDate) %>% 
   summarise(n = sum(!is.na(id))) %>% 
   mutate(n14 = rolling_sum(n)) %>% 
-  drop_na() %>% 
+  drop_na()
+
+est_cov_sum %>% 
   ggplot() +
   geom_col(aes(ResultDate, n14)) +
   facet_wrap(~ ResultValue, scales = "free_y") +
   labs(x = "Date of the 2020",
        y = "Number of tests")
+
+est_cov_sum_100k <- est_cov_sum %>% 
+  filter(ResultValue == "Positive") %>% 
+  mutate(n14_100k = (n14 / rahvaarv) * 100000)
+
+est_cov_sum_100k %>% 
+  ggplot(aes(ResultDate, n14_100k)) +
+  geom_line() +
+  geom_dl(label = prettyNum(est_cov_sum_100k$n14_100k[length(est_cov_sum_100k$n14_100k)], digits = 3), method = list("last.points", cex = 0.8)) +
+  labs(x = "Date of the 2020",
+       y = "14 day cases per 100'000 population")
 
 #' Percent of positive cases per week.
 #+
