@@ -5,7 +5,7 @@ Readme](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20
 # COVID-19 cases and deaths
 
 rstats-tartu  
-last update: 2020-09-01 08:56:00
+last update: 2020-09-01 21:13:05
 
 ## Contents
 
