@@ -1,4 +1,4 @@
-pkg <- c("dplyr", "readr", "stringr")
+pkg <- c("dplyr", "readr")
 invisible(lapply(pkg, library, character.only = TRUE))
 
 
@@ -14,7 +14,7 @@ if (!inherits(resp, "try-error")) {
   proc <- raw %>% 
     rename_all(tolower) %>% 
     rename_all(~gsub("_", "", .x)) %>% 
-    rename_all(str_replace, "popdata\\d+", "popdata") %>% 
+    rename_all(~gsub("popdata\\d+", "popdata", .x)) %>% 
     rename(country = countriesandterritories)
   stopifnot(
     all(
