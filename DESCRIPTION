@@ -34,9 +34,7 @@ Imports:
     zoo,
     ggthemes,
     lubridate,
-    tibbletime,
-    stringr,
-    stringi
+    tibbletime
 Suggests:
     
 VignetteBuilder:
