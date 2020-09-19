@@ -35,7 +35,8 @@ Imports:
     ggthemes,
     lubridate,
     tibbletime,
-    stringr
+    stringr,
+    stringi
 Suggests:
     
 VignetteBuilder:
