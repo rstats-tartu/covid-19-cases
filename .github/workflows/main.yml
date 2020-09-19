@@ -16,7 +16,7 @@ jobs:
         run: |-
           Rscript -e "install.packages('remotes', repos = 'https://demo.rstudiopm.com/all/__linux__/bionic/latest')"
           Rscript -e "remotes::install_deps(dependencies = TRUE, repos = 'https://demo.rstudiopm.com/all/__linux__/bionic/latest')"
-          Rscript -e "install.packages('stringr', repos = 'https://demo.rstudiopm.com/all/__linux__/bionic/latest')"
+          Rscript -e "install.packages('stringi', repos = 'https://demo.rstudiopm.com/all/__linux__/bionic/latest')"
       - name: Update datasets
         shell: bash
         run: |-
