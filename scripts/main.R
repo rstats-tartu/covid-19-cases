@@ -59,7 +59,7 @@ knitr::opts_chunk$set(message = FALSE, warning = FALSE)
 #' 
 #' Loading libraries.
 #+ libs
-pkg <- c("dplyr", "tidyr", "readr", "lubridate", "stringr", "here", "ggplot2", "directlabels", "tibbletime")
+pkg <- c("dplyr", "tidyr", "readr", "lubridate", "here", "ggplot2", "directlabels", "tibbletime")
 invisible(lapply(pkg, library, character.only = TRUE))
 eu <- read_csv("https://datahub.io/opendatafortaxjustice/listofeucountries/r/listofeucountries.csv") %>% 
   rename(country = x)
@@ -243,7 +243,7 @@ rolling_sums <- covid_cum %>%
   
 
 rolling_sums %>% 
-  filter(str_replace(country, "_", " ") %in% c(eu$country, "Norway", "Russia")) %>% 
+  filter(gsub("_", " ", country) %in% c(eu$country, "Norway", "Russia")) %>% 
   ggplot(aes(daterep, cases14_100k)) +
   geom_line(aes(group = country)) +
   facet_wrap(~ country, scales = "free_y") +
@@ -252,7 +252,7 @@ rolling_sums %>%
 
 
 rolling_sums %>% 
-  filter(str_replace(country, "_", " ") %in% c(eu$country, "Norway", "Russia")) %>% 
+  filter(gsub("_", " ", country) %in% c(eu$country, "Norway", "Russia")) %>% 
   ggplot(aes(daterep, deaths14_100k)) +
   geom_line(aes(group = country)) +
   facet_wrap(~ country) +
@@ -261,7 +261,7 @@ rolling_sums %>%
 
 
 rolling_sums %>% 
-  filter(str_replace(country, "_", " ") %in% c(eu$country, "Norway", "Russia")) %>% 
+  filter(gsub("_", " ", country) %in% c(eu$country, "Norway", "Russia")) %>% 
   mutate(risk = deaths14 / lag(cases14, 7)) %>% 
   ggplot(aes(daterep, risk)) +
   geom_line(aes(group = country)) +
