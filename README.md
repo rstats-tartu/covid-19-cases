@@ -5,7 +5,7 @@ Readme](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20
 # COVID-19 cases and deaths
 
 rstats-tartu  
-last update: 2020-09-04 21:13:18
+last update: 2020-09-21 21:14:00
 
 ## Contents
 
@@ -54,7 +54,7 @@ Rscript -e "rmarkdown::render('scripts/main.R', output_format = rmarkdown::githu
 Loading libraries.
 
 ``` r
-pkg <- c("dplyr", "tidyr", "readr", "lubridate", "stringr", "here", "ggplot2", "directlabels", "tibbletime")
+pkg <- c("dplyr", "tidyr", "readr", "lubridate", "here", "ggplot2", "directlabels", "tibbletime")
 invisible(lapply(pkg, library, character.only = TRUE))
 eu <- read_csv("https://datahub.io/opendatafortaxjustice/listofeucountries/r/listofeucountries.csv") %>% 
   rename(country = x)
@@ -111,8 +111,8 @@ cumlong %>%
     ## # A tibble: 2 x 2
     ##   name          value
     ##   <chr>         <dbl>
-    ## 1 cases_cum  25724980
-    ## 2 deaths_cum   868623
+    ## 1 cases_cum  30397361
+    ## 2 deaths_cum   960751
 
 ``` r
 cumlong %>% 
@@ -277,7 +277,7 @@ rolling_sums <- covid_cum %>%
   
 
 rolling_sums %>% 
-  filter(str_replace(country, "_", " ") %in% c(eu$country, "Norway", "Russia")) %>% 
+  filter(gsub("_", " ", country) %in% c(eu$country, "Norway", "Russia")) %>% 
   ggplot(aes(daterep, cases14_100k)) +
   geom_line(aes(group = country)) +
   facet_wrap(~ country, scales = "free_y") +
@@ -289,7 +289,7 @@ rolling_sums %>%
 
 ``` r
 rolling_sums %>% 
-  filter(str_replace(country, "_", " ") %in% c(eu$country, "Norway", "Russia")) %>% 
+  filter(gsub("_", " ", country) %in% c(eu$country, "Norway", "Russia")) %>% 
   ggplot(aes(daterep, deaths14_100k)) +
   geom_line(aes(group = country)) +
   facet_wrap(~ country) +
@@ -301,7 +301,7 @@ rolling_sums %>%
 
 ``` r
 rolling_sums %>% 
-  filter(str_replace(country, "_", " ") %in% c(eu$country, "Norway", "Russia")) %>% 
+  filter(gsub("_", " ", country) %in% c(eu$country, "Norway", "Russia")) %>% 
   mutate(risk = deaths14 / lag(cases14, 7)) %>% 
   ggplot(aes(daterep, risk)) +
   geom_line(aes(group = country)) +
