@@ -280,7 +280,7 @@ est <- est %>%
   mutate(result_wk = isoweek(ResultTime),
          ResultDate = date(ResultTime))
 
-#' 2020 aasta rahvaarv Statistikaameti andmebaasist.
+#' 2020. aasta rahvaarv Statistikaameti andmebaasist.
 #+
 rahvaarv <- 1328976
 
@@ -303,7 +303,7 @@ est_cov_sum %>%
   ggplot() +
   geom_col(aes(ResultDate, n14)) +
   facet_wrap(~ ResultValue, scales = "free_y") +
-  labs(x = "Date of the 2020",
+  labs(x = "Date, 2020",
        y = "Number of tests")
 
 est_cov_sum_100k <- est_cov_sum %>% 
@@ -314,7 +314,7 @@ est_cov_sum_100k %>%
   ggplot(aes(ResultDate, n14_100k)) +
   geom_line() +
   geom_dl(label = prettyNum(est_cov_sum_100k$n14_100k[length(est_cov_sum_100k$n14_100k)], digits = 3), method = list("last.points", cex = 0.8)) +
-  labs(x = "Date of the 2020",
+  labs(x = "Date, 2020",
        y = "14 day cases per 100'000 population")
 
 #' Percent of positive cases per week.
@@ -328,7 +328,7 @@ est %>%
   ggplot() +
   geom_point(aes(result_wk, pp, size = tests)) +
   scale_y_continuous(labels = scales::percent) +
-  labs(x = "Week of the 2020",
+  labs(x = "Week of 2020",
        y = "Positive tests, %")
 
 
@@ -391,7 +391,7 @@ processing %>%
   geom_point(aes(result_wk, median, size = log10(n))) +
   scale_y_log10() +
   scale_x_continuous(breaks = scales::pretty_breaks()) +
-  labs(x = "Week of the 2020", 
+  labs(x = "Week of 2020", 
        y = "Median timespan from\ntest result to database insertion, hours",
        size = "Number of tests\nper week, log10")
 
