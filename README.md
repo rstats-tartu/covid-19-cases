@@ -5,7 +5,7 @@ Readme](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20
 # COVID-19 cases and deaths
 
 rstats-tartu  
-last update: 2020-10-27 21:16:28
+last update: 2020-10-28 21:16:21
 
 ## Contents
 
@@ -111,8 +111,8 @@ cumlong %>%
     ## # A tibble: 2 x 2
     ##   name          value
     ##   <chr>         <dbl>
-    ## 1 cases_cum  42786394
-    ## 2 deaths_cum  1160308
+    ## 1 cases_cum  43240050
+    ## 2 deaths_cum  1167380
 
 ``` r
 cumlong %>% 
