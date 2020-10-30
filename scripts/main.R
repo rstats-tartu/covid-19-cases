@@ -266,7 +266,7 @@ rolling_sums %>%
   ggplot(aes(daterep, risk)) +
   geom_line(aes(group = country)) +
   facet_wrap(~ country) +
-  scale_y_log10()
+  scale_y_log10() +
   labs(x = "Date", 
        y = "Risk of death")
 
