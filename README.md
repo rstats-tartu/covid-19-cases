@@ -5,7 +5,7 @@ Readme](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20
 # COVID-19 cases and deaths
 
 rstats-tartu  
-last update: 2020-10-29 21:09:31
+last update: 2020-10-30 19:36:35
 
 ## Contents
 
@@ -111,8 +111,8 @@ cumlong %>%
     ## # A tibble: 2 x 2
     ##   name          value
     ##   <chr>         <dbl>
-    ## 1 cases_cum  43759399
-    ## 2 deaths_cum  1174578
+    ## 1 cases_cum  44301634
+    ## 2 deaths_cum  1181706
 
 ``` r
 cumlong %>% 
@@ -292,7 +292,7 @@ rolling_sums %>%
   filter(gsub("_", " ", country) %in% c(eu$country, "Norway", "Russia")) %>% 
   ggplot(aes(daterep, deaths14_100k)) +
   geom_line(aes(group = country)) +
-  facet_wrap(~ country) +
+  facet_wrap(~ country, scales = "free_y") +
   labs(x = "Date", 
        y = "14-day rolling deaths\nper 100,000 population")
 ```
@@ -306,24 +306,12 @@ rolling_sums %>%
   ggplot(aes(daterep, risk)) +
   geom_line(aes(group = country)) +
   facet_wrap(~ country) +
-  scale_y_log10()
-```
-
-![](README_files/figure-gfm/unnamed-chunk-4-3.png)<!-- -->
-
-``` r
+  scale_y_log10() +
   labs(x = "Date", 
        y = "Risk of death")
 ```
 
-    ## $x
-    ## [1] "Date"
-    ## 
-    ## $y
-    ## [1] "Risk of death"
-    ## 
-    ## attr(,"class")
-    ## [1] "labels"
+![](README_files/figure-gfm/unnamed-chunk-4-3.png)<!-- -->
 
 ## COVID-19 cases in Estonia
 
