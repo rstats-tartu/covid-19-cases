@@ -255,7 +255,7 @@ rolling_sums %>%
   filter(gsub("_", " ", country) %in% c(eu$country, "Norway", "Russia")) %>% 
   ggplot(aes(daterep, deaths14_100k)) +
   geom_line(aes(group = country)) +
-  facet_wrap(~ country) +
+  facet_wrap(~ country, scales = "free_y") +
   labs(x = "Date", 
        y = "14-day rolling deaths\nper 100,000 population")
 
