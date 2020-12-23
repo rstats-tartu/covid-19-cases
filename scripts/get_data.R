@@ -18,7 +18,7 @@ if (!inherits(resp, "try-error")) {
     rename(country = countriesandterritories)
   stopifnot(
     all(
-      c("daterep", "day", "month", "year", "cases", "deaths", 
+      c("daterep", "casesweekly", "deathsweekly", 
         "country", "geoid", 
         "countryterritorycode", "popdata") %in%
         colnames(proc))
@@ -34,3 +34,7 @@ download.file(
   "data/opendata_covid19_test_results.csv"
   )
 
+download.file(
+  "https://opendata.digilugu.ee/opendata_covid19_hospitalization_timeline.csv",
+  "data/opendata_covid19_hospitalization_timeline.csv"
+)
