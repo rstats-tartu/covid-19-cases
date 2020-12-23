@@ -5,7 +5,7 @@ Readme](https://github.com/rstats-tartu/covid-19-cases/workflows/Render%20and%20
 # COVID-19 cases and deaths
 
 rstats-tartu  
-last update: 2020-12-16 21:15:50
+last update: 2020-12-23 17:09:48
 
 ## Contents
 
@@ -71,6 +71,7 @@ Resetting timeline to days since first case in each country.
 
 ``` r
 covid_by_country <- covid %>% 
+  rename(cases = casesweekly, deaths = deathsweekly) %>% 
   filter(cases != 0, deaths != 0) %>% 
   group_by(country) %>% 
   mutate(tp = interval(Sys.Date(), daterep) / ddays(1),
@@ -82,7 +83,7 @@ Calculating number of cases and deaths per country. Keeping only
 informative rows.
 
 ``` r
-lag_n <- 7
+lag_n <- 1
 covid_cum <- covid_by_country %>% 
   mutate(cum_cases = with_order(tp, cumsum, cases),
          cum_deaths = with_order(tp, cumsum, deaths),
@@ -94,34 +95,17 @@ covid_cum <- covid_by_country %>%
 ## Worldwide cases and deaths
 
 ``` r
-cumulative <- covid_by_country %>% 
+cumlong <- covid_by_country %>% 
   group_by(daterep) %>% 
   summarise_at(c("cases", "deaths"), sum) %>% 
-  mutate_at(c("cases", "deaths"), list(cum = cumsum))
-
-
-cumlong <- cumulative %>% 
-  pivot_longer(cases:deaths_cum)
+  mutate_at(c("cases", "deaths"), cumsum) %>% 
+  pivot_longer(cases:deaths)
 cumlong %>% 
-  group_by(name) %>% 
-  summarise_at("value", max) %>% 
-  filter(name %in% c("cases_cum", "deaths_cum"))
-```
-
-    ## # A tibble: 2 x 2
-    ##   name          value
-    ##   <chr>         <dbl>
-    ## 1 cases_cum  70548813
-    ## 2 deaths_cum  1611987
-
-``` r
-cumlong %>% 
-  filter(name %in% c("cases_cum", "deaths_cum")) %>% 
   ggplot(aes(daterep, value, linetype = name)) +
   geom_line() +
   geom_dl(data = cumlong %>% 
             group_by(name) %>% 
-            filter(name %in% c("cases_cum", "deaths_cum"), value == max(value)), 
+            filter(name %in% c("cases", "deaths"), value == max(value)), 
           aes(label = prettyNum(value, big.mark = ",")), 
           method = list("last.points", hjust = 1.05, vjust = -0.3)) +
   labs(x = "Date", 
@@ -240,7 +224,7 @@ earlier.
 ``` r
 covid_cum %>% 
   ggplot(aes(tp, risk_lag)) +
-  geom_line(aes(group = country)) +
+  geom_line(aes(group = country), size = 0.2) +
   geom_dl(aes(label = geoid), method = list("last.points", cex = 0.8)) +
   scale_y_log10() +
   labs(x = "Time, days from first case", 
@@ -253,7 +237,7 @@ covid_cum %>%
 Relative number of cases and deaths per 100,000 population
 
 ``` r
-rolling_sum <- rollify(sum, window = 14)
+rolling_sum <- rollify(sum, window = 2)
 ```
 
 Fill in missing dates to calculate 14-day rolling sum.
@@ -261,7 +245,7 @@ Fill in missing dates to calculate 14-day rolling sum.
 ``` r
 rolling_sums <- covid_cum %>% 
   group_by(country) %>% 
-  complete(daterep = seq.Date(min(daterep), max(daterep), "day"), 
+  complete(daterep = seq.Date(min(daterep), max(daterep), "week"), 
            fill = list(cases = 0, deaths = 0),
            geoid, 
            popdata) %>%
@@ -272,12 +256,21 @@ rolling_sums <- covid_cum %>%
          cases14_100k = (cases14 / popdata) * 1e5,
          deaths14_100k = (deaths14 / popdata) * 1e5) %>% 
   select(country, daterep, geoid, popdata, ends_with("14"), ends_with("14_100k")) %>% 
-  
   na.omit()
   
 
-rolling_sums %>% 
-  filter(gsub("_", " ", country) %in% c(eu$country, "Norway", "Russia")) %>% 
+europe <- rolling_sums %>% 
+  filter(gsub("_", " ", country) %in% c(eu$country, "Norway", "Russia"))
+
+ranks <- europe %>% 
+  group_by(country) %>% 
+  mutate(
+    rank_cases = cases14_100k[daterep == max(daterep)],
+    rank_deaths = deaths14_100k[daterep == max(daterep)]) %>% 
+  ungroup()
+
+ranks %>% 
+  mutate(country = reorder(country, 1 / rank_cases)) %>% 
   ggplot(aes(daterep, cases14_100k)) +
   geom_line(aes(group = country)) +
   facet_wrap(~ country, scales = "free_y") +
@@ -288,8 +281,8 @@ rolling_sums %>%
 ![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 ``` r
-rolling_sums %>% 
-  filter(gsub("_", " ", country) %in% c(eu$country, "Norway", "Russia")) %>% 
+ranks %>% 
+  mutate(country = reorder(country, 1 / rank_deaths)) %>% 
   ggplot(aes(daterep, deaths14_100k)) +
   geom_line(aes(group = country)) +
   facet_wrap(~ country, scales = "free_y") +
@@ -302,7 +295,13 @@ rolling_sums %>%
 ``` r
 rolling_sums %>% 
   filter(gsub("_", " ", country) %in% c(eu$country, "Norway", "Russia")) %>% 
-  mutate(risk = deaths14 / lag(cases14, 7)) %>% 
+  mutate(risk = deaths14 / lag(cases14, 1),
+         country = reorder(country, 1 / risk)) %>% 
+  group_by(country) %>% 
+  mutate(
+    rank_risk = risk[daterep == max(daterep)]) %>% 
+  ungroup() %>% 
+  mutate(country = reorder(country, 1 / rank_risk)) %>% 
   ggplot(aes(daterep, risk)) +
   geom_line(aes(group = country)) +
   facet_wrap(~ country) +
@@ -316,11 +315,12 @@ rolling_sums %>%
 ## COVID-19 cases in Estonia
 
 ``` r
-est <- read_csv(here("data/opendata_covid19_test_results.csv"))
+est_raw <- read_csv(here("data/opendata_covid19_test_results.csv"))
 
-est <- est %>% 
+est <- est_raw %>% 
   mutate(result_wk = isoweek(ResultTime),
-         ResultDate = date(ResultTime))
+         ResultDate = date(ResultTime)) %>% 
+  filter(yday(ResultDate) < yday(today()) - 1)
 ```
 
 2020. aasta rahvaarv Statistikaameti andmebaasist.
@@ -334,22 +334,18 @@ rahvaarv <- 1328976
 14 day rolling number of cases.
 
 ``` r
+rolling_sum <- rollify(sum, window = 14)
 est_cov_sum <- est %>% 
-  select(id, ResultDate, ResultValue) %>% 
-  mutate(ResultValue = case_when(
-    ResultValue == "N" ~ "Negative",
-    ResultValue == "P" ~ "Positive"
-  )) %>% 
+  count(ResultDate, ResultValue) %>% 
   group_by(ResultValue) %>% 
-  complete(ResultDate = seq.Date(min(ResultDate), max(ResultDate), "day")) %>%
-  group_by(ResultValue, ResultDate) %>% 
-  summarise(n = sum(!is.na(id))) %>% 
+  complete(ResultDate = seq.Date(min(ResultDate), max(ResultDate), "day"), fill = list(n = 0)) %>%
+  group_by(ResultValue) %>% 
   mutate(n14 = rolling_sum(n)) %>% 
   drop_na()
 
 est_cov_sum %>% 
   ggplot() +
-  geom_col(aes(ResultDate, n14)) +
+  geom_line(aes(ResultDate, n14)) +
   facet_wrap(~ ResultValue, scales = "free_y") +
   labs(x = "Date, 2020",
        y = "Number of tests")
@@ -359,7 +355,7 @@ est_cov_sum %>%
 
 ``` r
 est_cov_sum_100k <- est_cov_sum %>% 
-  filter(ResultValue == "Positive") %>% 
+  filter(ResultValue == "P") %>% 
   mutate(n14_100k = (n14 / rahvaarv) * 100000)
 
 est_cov_sum_100k %>% 
@@ -412,17 +408,20 @@ processing <- est %>%
   mutate(result_to_insert = interval(ResultTime, AnalysisInsertTime) / dhours(1),
          result_time = daytime(ResultTime),
          insert_time = daytime(AnalysisInsertTime)) %>% 
-  select(id, result_wk, result_to_insert, result_time, insert_time)
+  filter(result_to_insert > 0)  %>% 
+  group_by(date(ResultTime)) %>% 
+  summarise_at("result_to_insert", median)
 ```
 
 Results timestamps during day.
 
 ``` r
 processing %>% 
-  ggplot() +
-  geom_histogram(aes(x = result_time, y = ..count.. / sum(..count..)), bins = 24) +
-  scale_y_continuous(labels = scales::percent) +
-  labs(x = "Result time", y = "Percent cases")
+  filter(`date(ResultTime)` > "2020-03-15") %>% 
+  ggplot(aes(`date(ResultTime)`, result_to_insert)) +
+  geom_line() +
+  scale_y_log10() +
+  labs(x = "Result week, 2020", y = "Result to db insert, h")
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
@@ -430,7 +429,8 @@ processing %>%
 Timestamps of result insertion to database.
 
 ``` r
-processing %>% 
+est %>% 
+  mutate(insert_time = daytime(AnalysisInsertTime)) %>% 
   ggplot() +
   geom_histogram(aes(x = insert_time, y = ..count.. / sum(..count..)), bins = 24) +
   scale_y_continuous(labels = scales::percent) +
@@ -452,20 +452,3 @@ processing %>%
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
-
-Test results processing times.
-
-``` r
-processing %>% 
-  group_by(result_wk) %>% 
-  summarise_at("result_to_insert", list(median = median, n = length)) %>% 
-  ggplot() +
-  geom_point(aes(result_wk, median, size = log10(n))) +
-  scale_y_log10() +
-  scale_x_continuous(breaks = scales::pretty_breaks()) +
-  labs(x = "Week of 2020", 
-       y = "Median timespan from\ntest result to database insertion, hours",
-       size = "Number of tests\nper week, log10")
-```
-
-![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
