@@ -39,7 +39,7 @@ Control](https://www.ecdc.europa.eu/en/publications-data/download-todays-data-ge
 Estonian COVID-19 dataset was downloaded from Estonian Healthboard
 <https://opendata.digilugu.ee/opendata_covid19_test_results.csv>
 
-Datasets were downloaded using [scripts/get\_data.R](script/get_data.R)
+Datasets were downloaded using [scripts/get\_data.R](scripts/get_data.R)
 script and saved to `data` folder.
 
 Report was rendered using `rmarkdown::render()` command. To render, you
